@@ -16,7 +16,7 @@ const genderOptions = [
     { value: 'Other', label: 'Other' }
 ]
 
-const Login = () => {
+const Login = ({ setUser }) => {
     const [step, setStep] = useState(1)
     const [isRegister, setIsRegister] = useState(false)
     const [form, setForm] = useState({
@@ -71,7 +71,8 @@ const Login = () => {
             const data = await res.json()
             if (res.ok && data.success) {
                 alert('Login successful!\n' + JSON.stringify(data.user, null, 2))
-                // Optionally, set user state or redirect here
+                setUser(data.user) // Set user in App state
+                window.location.hash = '#home'
             } else {
                 setLoginError(data.error || 'Login failed')
             }
