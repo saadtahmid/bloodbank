@@ -1,21 +1,21 @@
-import sql from './db.js'
+// Main entry point: sets up express, imports routers, and starts the server
+
+import express from 'express'
+import locationRoutes from './routes/locationRoutes.js'
+// ...import other routers as you create them...
+
+const app = express()
+const PORT = process.env.PORT || 3001
+
+app.use(express.json())
+
+// Register routers
+app.use('/api/locations', locationRoutes)
+// app.use('/api/bloodbanks', bloodBankRoutes) // Example for future
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+})
 
 
-async function getUsersOver(age) {
-    const users = await sql`
-    select *
-    from bloodbank.location
-    
-  `
-    return users
-}
 
-// Use an IIFE to await the async function
-; (async () => {
-    try {
-        const users = await getUsersOver(30)
-        console.log(users)
-    } catch (err) {
-        console.error(err)
-    }
-})()
