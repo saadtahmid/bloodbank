@@ -19,10 +19,10 @@ function App() {
   }, [])
 
   return (
-    <div className="homepage-container">
+    <div className="homepage-container min-h-screen flex flex-col bg-black">
       <Navbar />
       <Header />
-      <main>
+      <main className="flex-1 flex flex-col">
         {showDirectory ? (
           <BloodBankDirectory />
         ) : (

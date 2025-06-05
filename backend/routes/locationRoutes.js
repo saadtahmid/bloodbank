@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getDivisions, getDistricts, getCities } from '../services/locationService.js'
+import { getDivisions, getDistricts, getCities, searchBloodBanks } from '../services/locationService.js'
 
 const router = Router()
 
@@ -31,6 +31,16 @@ router.get('/cities', async (req, res) => {
         res.json(cities)
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch cities' })
+    }
+})
+
+router.get('/search-bloodbanks', async (req, res) => {
+    const { division = '', district = '', city = '' } = req.query
+    try {
+        const banks = await searchBloodBanks(division, district, city)
+        res.json(banks)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch blood banks' })
     }
 })
 
