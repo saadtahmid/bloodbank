@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 const BloodBankDirectory = () => {
-    const [division, setDivision] = useState('')
+    const [division, setDivision] = useState('ANY')
     const [district, setDistrict] = useState('')
     const [city, setCity] = useState('')
     const [divisions, setDivisions] = useState([])

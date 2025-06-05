@@ -29,11 +29,27 @@ const Navbar = () => {
                                     Blood Bank Directory
                                 </a>
                             </li>
+                            <li>
+                                <a
+                                    href="#request-blood"
+                                    className="block px-2 py-2 text-white hover:bg-red-500 hover:text-white"
+                                >
+                                    Request Blood
+                                </a>
+                            </li>
                         </ul>
                     )}
                 </li>
                 <li>
                     <a href="#donate-blood" className="text-white hover:text-red-500 font-semibold transition-colors">Donate Blood</a>
+                </li>
+                <li className="ml-4">
+                    <a
+                        href="#login"
+                        className="text-white border border-red-500 px-4 py-1 rounded hover:bg-red-600 hover:text-white transition-colors font-semibold"
+                    >
+                        Login
+                    </a>
                 </li>
             </ul>
         </nav>
