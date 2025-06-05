@@ -2,6 +2,7 @@
 
 import express from 'express'
 import locationRoutes from './routes/locationRoutes.js'
+import userRoutes from './routes/userRoutes.js'
 // ...import other routers as you create them...
 
 const app = express()
@@ -11,6 +12,7 @@ app.use(express.json())
 
 // Register routers
 app.use('/api/locations', locationRoutes)
+app.use('/api', userRoutes)
 // app.use('/api/bloodbanks', bloodBankRoutes) // Example for future
 
 app.listen(PORT, () => {

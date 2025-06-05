@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 
 const roleOptions = [
-    { value: 'HOSPITAL', label: 'Hospital' },
-    { value: 'DONOR', label: 'Donor' },
-    { value: 'BLOODBANK', label: 'Blood Bank' }
+    { value: 'Hospital', label: 'Hospital' },
+    { value: 'Donor', label: 'Donor' },
+    { value: 'Bloodbank', label: 'Blood Bank' }
 ]
 
 const bloodTypes = [
@@ -36,6 +36,7 @@ const Login = () => {
         last_donation_date: '',
     })
     const [passwordTouched, setPasswordTouched] = useState(false)
+    const [loginError, setLoginError] = useState('')
 
     const handleChange = e => {
         setForm({ ...form, [e.target.name]: e.target.value })
@@ -54,14 +55,29 @@ const Login = () => {
         alert('Registered!\n' + JSON.stringify(form, null, 2))
     }
 
-    const handleLogin = e => {
+    const handleLogin = async (e) => {
         e.preventDefault()
-        // TODO: send login data to backend for authentication
-        alert('Login!\n' + JSON.stringify({
-            email: form.email,
-            password: form.password,
-            role: form.role
-        }, null, 2))
+        setLoginError('')
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password,
+                    role: form.role
+                })
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                alert('Login successful!\n' + JSON.stringify(data.user, null, 2))
+                // Optionally, set user state or redirect here
+            } else {
+                setLoginError(data.error || 'Login failed')
+            }
+        } catch (err) {
+            setLoginError('Network error')
+        }
     }
 
     return (
@@ -109,6 +125,9 @@ const Login = () => {
                                 <option key={r.value} value={r.value}>{r.label}</option>
                             ))}
                         </select>
+                        {loginError && (
+                            <div className="text-red-400 text-sm">{loginError}</div>
+                        )}
                         <button
                             className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-semibold"
                             type="submit"
@@ -120,7 +139,7 @@ const Login = () => {
                                 <button
                                     type="button"
                                     className="text-red-400 underline"
-                                    onClick={() => { setIsRegister(false); setStep(1); }}
+                                    onClick={() => { setIsRegister(false); setStep(1); setLoginError(''); }}
                                 >
                                     Already have an account? Login
                                 </button>
@@ -128,7 +147,7 @@ const Login = () => {
                                 <button
                                     type="button"
                                     className="text-red-400 underline"
-                                    onClick={() => { setIsRegister(true); setStep(1); }}
+                                    onClick={() => { setIsRegister(true); setStep(1); setLoginError(''); }}
                                 >
                                     Don't have an account? Register
                                 </button>
