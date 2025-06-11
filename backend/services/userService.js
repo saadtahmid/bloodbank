@@ -39,3 +39,26 @@ export async function findUserByEmailAndRole(email, password, role) {
     console.log('findUserByEmailAndRole result:', result)
     return result[0] || null
 }
+
+export async function getCampsByDivision(division) {
+    let query = `
+        SELECT c.*, b.name as bloodbank_name
+        FROM bloodbank.Camp c
+        JOIN bloodbank.BloodBank b ON c.bloodbank_id = b.bloodbank_id
+        WHERE 1=1
+    `
+    const params = []
+    if (division) {
+        query += ` AND c.location ILIKE '%' || $${params.length + 1} || '%'`
+        params.push(division)
+    }
+    query += ` ORDER BY c.start_date DESC`
+    const result = await sql.unsafe(query, params)
+
+    // Format start_date and end_date to YYYY-MM-DD (date only)
+    return result.map(camp => ({
+        ...camp,
+        start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
+        end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
+    }))
+}

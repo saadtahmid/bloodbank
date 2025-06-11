@@ -4,7 +4,8 @@ import {
     getAllDonors,
     getAllBloodBanks,
     getAllHospitals,
-    findUserByEmailAndRole
+    findUserByEmailAndRole,
+    getCampsByDivision
 } from '../services/userService.js'
 
 const router = Router()
@@ -59,6 +60,16 @@ router.post('/login', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Login failed' })
+    }
+})
+
+router.get('/camps', async (req, res) => {
+    const { division = '' } = req.query
+    try {
+        const camps = await getCampsByDivision(division)
+        res.json(camps)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch camps' })
     }
 })
 

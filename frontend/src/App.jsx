@@ -6,12 +6,14 @@ import Footer from './components/Footer'
 import BloodBankDirectory from './components/BloodBankDirectory'
 import Login from './components/Login'
 import RequestBlood from './components/RequestBlood'
+import ViewCamps from './components/ViewCamps'
 import { useEffect, useState } from 'react'
 
 function App() {
   const [showDirectory, setShowDirectory] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
   const [showRequestBlood, setShowRequestBlood] = useState(false)
+  const [showViewCamps, setShowViewCamps] = useState(false)
   const [user, setUser] = useState(null) // Store logged-in user
 
   useEffect(() => {
@@ -19,6 +21,7 @@ function App() {
       setShowDirectory(window.location.hash === '#blood-bank-directory')
       setShowLogin(window.location.hash === '#login')
       setShowRequestBlood(window.location.hash === '#request-blood')
+      setShowViewCamps(window.location.hash === '#view-camps')
     }
     window.addEventListener('hashchange', handleHashChange)
     handleHashChange()
@@ -35,6 +38,8 @@ function App() {
           <Login setUser={setUser} />
         ) : showRequestBlood ? (
           <RequestBlood user={user} />
+        ) : showViewCamps ? (
+          <ViewCamps />
         ) : showDirectory ? (
           <BloodBankDirectory />
         ) : (
