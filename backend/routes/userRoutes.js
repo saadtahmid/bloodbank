@@ -5,7 +5,8 @@ import {
     getAllBloodBanks,
     getAllHospitals,
     findUserByEmailAndRole,
-    getCampsByDivision
+    getCampsByDivision,
+    registerUserWithRole
 } from '../services/userService.js'
 
 const router = Router()
@@ -60,6 +61,23 @@ router.post('/login', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Login failed' })
+    }
+})
+
+router.post('/register', async (req, res) => {
+    try {
+        const { email, password, role, ...rest } = req.body
+        if (!email || !password || !role) {
+            return res.status(400).json({ error: 'Email, password, and role are required' })
+        }
+        const result = await registerUserWithRole(email, password, role, rest)
+        if (result.success) {
+            res.json({ success: true, user_id: result.user_id })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Registration failed' })
     }
 })
 

@@ -62,3 +62,62 @@ export async function getCampsByDivision(division) {
         end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
     }))
 }
+
+export async function registerUserWithRole(email, password, role, details) {
+    // Check if user already exists
+    const existing = await sql`SELECT user_id FROM bloodbank.Users WHERE email = ${email}`
+    if (existing.length > 0) {
+        return { success: false, error: 'User already exists' }
+    }
+
+    // Insert into Users table
+    const userRes = await sql`
+        INSERT INTO bloodbank.Users (email, password, role)
+        VALUES (${email}, ${password}, ${role})
+        RETURNING user_id
+    `
+    const user_id = userRes[0]?.user_id
+    if (!user_id) return { success: false, error: 'User creation failed' }
+
+    // Insert into role-specific table
+    if (role.toUpperCase() === 'DONOR') {
+        await sql`
+            INSERT INTO bloodbank.Donors
+            (user_id, name, gender, blood_type, weight, location, contact_info, last_donation_date, birth_date)
+            VALUES (
+                ${user_id},
+                ${details.name || null},
+                ${details.gender || null},
+                ${details.blood_type || null},
+                ${details.weight || null},
+                ${details.location || null},
+                ${details.contact_number || null},
+                ${details.last_donation_date || null},
+                ${details.birth_date || null}
+            )
+        `
+    } else if (role.toUpperCase() === 'HOSPITAL') {
+        await sql`
+            INSERT INTO bloodbank.Hospital
+            (user_id, name, location, contact_info)
+            VALUES (
+                ${user_id},
+                ${details.name || null},
+                ${details.location || null},
+                ${details.contact_number || null}
+            )
+        `
+    } else if (role.toUpperCase() === 'BLOODBANK') {
+        await sql`
+            INSERT INTO bloodbank.BloodBank
+            (user_id, name, location, contact_number)
+            VALUES (
+                ${user_id},
+                ${details.name || null},
+                ${details.location || null},
+                ${details.contact_number || null}
+            )
+        `
+    }
+    return { success: true, user_id }
+}

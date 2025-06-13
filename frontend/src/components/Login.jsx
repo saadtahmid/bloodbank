@@ -49,10 +49,29 @@ const Login = ({ setUser }) => {
         setStep(2)
     }
 
-    const handleRegister = e => {
+    const handleRegister = async (e) => {
         e.preventDefault()
-        // TODO: send form data to backend for registration
-        alert('Registered!\n' + JSON.stringify(form, null, 2))
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form)
+            })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                alert('Registration successful! You can now login.')
+                setStep(1)
+                setIsRegister(false)
+            } else {
+                alert(data.error || 'Registration failed')
+                setStep(1)
+                setIsRegister(false)
+            }
+        } catch (err) {
+            alert('Network error')
+            setStep(1)
+            setIsRegister(false)
+        }
     }
 
     const handleLogin = async (e) => {
@@ -188,7 +207,7 @@ const Login = ({ setUser }) => {
                             required
                         />
                         {/* Role-specific fields */}
-                        {form.role === 'DONOR' && (
+                        {form.role === 'Donor' && (
                             <>
                                 <select
                                     className="w-full px-4 py-2 rounded bg-black border border-gray-700 text-white"
