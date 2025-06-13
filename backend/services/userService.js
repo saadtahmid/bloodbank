@@ -1,4 +1,5 @@
 import sql from '../db.js'
+import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
 
 // Get all users
 export async function getAllUsers() {
@@ -29,38 +30,17 @@ export async function getAllHospitals() {
     return result
 }
 
-export async function findUserByEmailAndRole(email, password, role) {
-    const result = await sql`
-        SELECT user_id, email, role
-        FROM bloodbank.Users
-        WHERE email = ${email} AND password = ${password} AND role = ${role}
-        LIMIT 1
-    `
-    console.log('findUserByEmailAndRole result:', result)
-    return result[0] || null
+function hashPassword(password) {
+    const salt = randomBytes(8).toString('hex')
+    const hash = scryptSync(password, salt, 32).toString("base64")
+    return `${salt}:${hash}`
 }
 
-export async function getCampsByDivision(division) {
-    let query = `
-        SELECT c.*, b.name as bloodbank_name
-        FROM bloodbank.Camp c
-        JOIN bloodbank.BloodBank b ON c.bloodbank_id = b.bloodbank_id
-        WHERE 1=1
-    `
-    const params = []
-    if (division) {
-        query += ` AND c.location ILIKE '%' || $${params.length + 1} || '%'`
-        params.push(division)
-    }
-    query += ` ORDER BY c.start_date DESC`
-    const result = await sql.unsafe(query, params)
-
-    // Format start_date and end_date to YYYY-MM-DD (date only)
-    return result.map(camp => ({
-        ...camp,
-        start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
-        end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
-    }))
+function verifyPassword(password, hashed) {
+    const [salt, key] = hashed.split(':')
+    const hashBuffer = Buffer.from(key, 'hex')
+    const testBuffer = scryptSync(password, salt, 32)
+    return timingSafeEqual(hashBuffer, testBuffer)
 }
 
 export async function registerUserWithRole(email, password, role, details) {
@@ -70,10 +50,13 @@ export async function registerUserWithRole(email, password, role, details) {
         return { success: false, error: 'User already exists' }
     }
 
+    // Hash the password
+    const hashedPassword = hashPassword(password)
+
     // Insert into Users table
     const userRes = await sql`
         INSERT INTO bloodbank.Users (email, password, role)
-        VALUES (${email}, ${password}, ${role})
+        VALUES (${email}, ${hashedPassword}, ${role})
         RETURNING user_id
     `
     const user_id = userRes[0]?.user_id
@@ -121,3 +104,47 @@ export async function registerUserWithRole(email, password, role, details) {
     }
     return { success: true, user_id }
 }
+
+export async function findUserByEmailAndRole(email, password, role) {
+    const result = await sql`
+        SELECT user_id, email, password, role
+        FROM bloodbank.Users
+        WHERE email = ${email} AND role = ${role}
+        LIMIT 1
+    `
+    if (result.length === 0) return null
+    const user = result[0]
+    if (verifyPassword(password, user.password)) {
+        // Do not return password hash
+        const { password, ...userWithoutPassword } = user
+        return userWithoutPassword
+    }
+    return null
+}
+
+export async function getCampsByDivision(division) {
+    let query = `
+        SELECT c.*, b.name as bloodbank_name
+        FROM bloodbank.Camp c
+        JOIN bloodbank.BloodBank b ON c.bloodbank_id = b.bloodbank_id
+        WHERE 1=1
+    `
+    const params = []
+    if (division) {
+        query += ` AND c.location ILIKE '%' || $${params.length + 1} || '%'`
+        params.push(division)
+    }
+    query += ` ORDER BY c.start_date DESC`
+    const result = await sql.unsafe(query, params)
+
+    // Format start_date and end_date to YYYY-MM-DD (date only)
+    return result.map(camp => ({
+        ...camp,
+        start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
+        end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
+    }))
+}
+
+
+
+
