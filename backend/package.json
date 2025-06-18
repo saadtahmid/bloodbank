@@ -5,7 +5,8 @@
   "type": "module",
   
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "npm run build"
   },
   "repository": {
     "type": "git",
