@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 const roleOptions = [
     { value: 'Hospital', label: 'Hospital' },
     { value: 'Donor', label: 'Donor' },
@@ -52,7 +54,7 @@ const Login = ({ setUser }) => {
     const handleRegister = async (e) => {
         e.preventDefault()
         try {
-            const res = await fetch('/api/register', {
+            const res = await fetch(`${API_BASE_URL}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)
@@ -78,7 +80,7 @@ const Login = ({ setUser }) => {
         e.preventDefault()
         setLoginError('')
         try {
-            const res = await fetch('/api/login', {
+            const res = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

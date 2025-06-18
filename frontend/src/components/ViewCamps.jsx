@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
 const ViewCamps = () => {
     const [division, setDivision] = useState('ANY')
     const [divisions, setDivisions] = useState([])
     const [camps, setCamps] = useState([])
 
     useEffect(() => {
-        fetch('/api/locations/divisions')
+        fetch(`${API_BASE_URL}/api/locations/divisions`)
             .then(res => res.json())
             .then(data => setDivisions(data))
             .catch(() => setDivisions([]))
@@ -14,7 +16,7 @@ const ViewCamps = () => {
 
     useEffect(() => {
         const div = division === 'ANY' ? '' : division
-        fetch(`/api/camps?division=${encodeURIComponent(div)}`)
+        fetch(`${API_BASE_URL}/api/camps?division=${encodeURIComponent(div)}`)
             .then(res => res.json())
             .then(data => setCamps(data))
             .catch(() => setCamps([]))
@@ -45,7 +47,7 @@ const ViewCamps = () => {
                                 <div className="text-white">Start: {camp.start_date}</div>
                                 <div className="text-white">End: {camp.end_date}</div>
                                 <div className="text-white">Blood Bank: {camp.bloodbank_name}</div>
-                
+
                             </li>
                         ))}
                     </ul>
