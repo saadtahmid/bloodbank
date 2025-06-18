@@ -3,11 +3,17 @@
 import express from 'express'
 import locationRoutes from './routes/locationRoutes.js'
 import userRoutes from './routes/userRoutes.js'
+import cors from 'cors'
 // ...import other routers as you create them...
+
 
 const app = express()
 const PORT = process.env.PORT || 3001
-
+app.use(cors({
+    origin: 'https://bloodbank-frontend-lake.vercel.app', // Adjust this to your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}))
 app.use(express.json())
 
 // Register routers
