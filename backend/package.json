@@ -5,8 +5,8 @@
   "type": "module",
   
   "scripts": {
-    "dev": "nodemon server.js",
-    "build": "echo \"No build step\""
+    "dev": "nodemon server.js"
+    
   },
   "repository": {
     "type": "git",
