@@ -14,7 +14,8 @@ app.use(express.json())
 app.use('/api/locations', locationRoutes)
 app.use('/api', userRoutes)
 // app.use('/api/bloodbanks', bloodBankRoutes) // Example for future
-
+app.get('/', (req, res) => {
+    res.send('Welcome to the Blood Donation API')})
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
