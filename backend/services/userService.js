@@ -106,12 +106,40 @@ export async function registerUserWithRole(email, password, role, details) {
 }
 
 export async function findUserByEmailAndRole(email, password, role) {
-    const result = await sql`
-        SELECT user_id, email, password, role
-        FROM bloodbank.Users
-        WHERE email = ${email} AND role = ${role}
-        LIMIT 1
-    `
+    let result
+    if (role.toLowerCase() === 'hospital') {
+        result = await sql`
+            SELECT u.user_id, u.email, u.password, u.role, h.hospital_id
+            FROM bloodbank.Users u
+            LEFT JOIN bloodbank.Hospital h ON u.user_id = h.user_id
+            WHERE u.email = ${email} AND u.role = ${role}
+            LIMIT 1
+        `
+    }
+    else if (role.toLowerCase() === 'bloodbank') {
+        result = await sql`
+            SELECT u.user_id, u.email, u.password, u.role, b.bloodbank_id
+            FROM bloodbank.Users u
+            LEFT JOIN bloodbank.BloodBank b ON u.user_id = b.user_id
+            WHERE u.email = ${email} AND u.role = ${role}
+            LIMIT 1 `
+    }
+    else if (role.toLowerCase() === 'donor') {
+        result = await sql`
+            SELECT u.user_id, u.email, u.password, u.role, d.donor_id
+            FROM bloodbank.Users u
+            LEFT JOIN bloodbank.Donors d ON u.user_id = d.user_id
+            WHERE u.email = ${email} AND u.role = ${role}
+            LIMIT 1
+        `
+    } else {
+        result = await sql`
+            SELECT user_id, email, password, role
+            FROM bloodbank.Users
+            WHERE email = ${email} AND role = ${role}
+            LIMIT 1
+        `
+    }
     if (result.length === 0) return null
     const user = result[0]
     if (verifyPassword(password, user.password)) {
@@ -142,6 +170,40 @@ export async function getCampsByDivision(division) {
         ...camp,
         start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
         end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
+    }))
+}
+
+export async function registerDonorForCamp(donor_id, camp_id) {
+    // Check if already registered
+    const existing = await sql`
+        SELECT registration_id FROM bloodbank.CampRegistration
+        WHERE donor_id = ${donor_id} AND camp_id = ${camp_id}
+    `
+    if (existing.length > 0) {
+        return { success: false, error: 'Already registered for this camp' }
+    }
+    // Register
+    await sql`
+        INSERT INTO bloodbank.CampRegistration (donor_id, camp_id)
+        VALUES (${donor_id}, ${camp_id})
+    `
+    return { success: true }
+}
+
+export async function getRegisteredCampsForDonor(donor_id) {
+    const result = await sql`
+        SELECT c.*, b.name as bloodbank_name, r.registration_date, r.attended
+        FROM bloodbank.CampRegistration r
+        JOIN bloodbank.Camp c ON r.camp_id = c.camp_id
+        JOIN bloodbank.BloodBank b ON c.bloodbank_id = b.bloodbank_id
+        WHERE r.donor_id = ${donor_id}
+        ORDER BY c.start_date DESC
+    `
+    return result.map(camp => ({
+        ...camp,
+        start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
+        end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
+        registration_date: camp.registration_date ? camp.registration_date.toISOString().slice(0, 10) : null,
     }))
 }
 

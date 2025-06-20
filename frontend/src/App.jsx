@@ -39,7 +39,7 @@ function App() {
         ) : showRequestBlood ? (
           <RequestBlood user={user} />
         ) : showViewCamps ? (
-          <ViewCamps />
+          <ViewCamps user={user} />
         ) : showDirectory ? (
           <BloodBankDirectory />
         ) : (

@@ -6,7 +6,9 @@ import {
     getAllHospitals,
     findUserByEmailAndRole,
     getCampsByDivision,
-    registerUserWithRole
+    registerUserWithRole,
+    registerDonorForCamp,
+    getRegisteredCampsForDonor
 } from '../services/userService.js'
 
 const router = Router()
@@ -88,6 +90,38 @@ router.get('/camps', async (req, res) => {
         res.json(camps)
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch camps' })
+    }
+})
+
+// Register a donor for a camp
+router.post('/camps/register', async (req, res) => {
+    const { donor_id, camp_id } = req.body
+    if (!donor_id || !camp_id) {
+        return res.status(400).json({ success: false, error: 'donor_id and camp_id are required' })
+    }
+    try {
+        const result = await registerDonorForCamp(donor_id, camp_id)
+        if (result.success) {
+            res.json({ success: true })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Registration failed' })
+    }
+})
+
+// Get all camps a donor is registered for
+router.get('/camps/registered/:donor_id', async (req, res) => {
+    const { donor_id } = req.params
+    if (!donor_id) {
+        return res.status(400).json({ error: 'donor_id is required' })
+    }
+    try {
+        const result = await getRegisteredCampsForDonor(donor_id)
+        res.json(result)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch registered camps' })
     }
 })
 
