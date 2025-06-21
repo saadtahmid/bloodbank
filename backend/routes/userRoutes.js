@@ -10,7 +10,8 @@ import {
     registerDonorForCamp,
     getRegisteredCampsForDonor,
     getRegistrationsForBloodBank,
-    updateRegistrationAttendedStatus
+    updateRegistrationAttendedStatus,
+    addDonationForRegistration
 } from '../services/userService.js'
 
 const router = Router()
@@ -157,6 +158,29 @@ router.put('/camps/registration/:registration_id', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Failed to update registration' })
+    }
+})
+
+// Add a donation for a camp registration
+router.post('/donations', async (req, res) => {
+    console.log('POST /api/donations called')
+    console.log('Request body:', req.body)
+    const { donor_id, bloodbank_id, camp_id, blood_type, units } = req.body
+    if (!donor_id || !bloodbank_id || !camp_id || !blood_type || !units) {
+        console.log('Missing required fields')
+        return res.status(400).json({ error: 'All fields are required' })
+    }
+    try {
+        const result = await addDonationForRegistration({ donor_id, bloodbank_id, camp_id, blood_type, units })
+        console.log('Donation insert result:', result)
+        if (result.success) {
+            res.json({ success: true, donation_id: result.donation_id })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        console.error('Failed to add donation:', err)
+        res.status(500).json({ error: 'Failed to add donation' })
     }
 })
 

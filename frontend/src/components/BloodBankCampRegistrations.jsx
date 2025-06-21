@@ -6,6 +6,8 @@ const BloodBankCampRegistrations = ({ user }) => {
     const [registrations, setRegistrations] = useState([])
     const [loading, setLoading] = useState(false)
     const [updateStatus, setUpdateStatus] = useState({}) // { [registration_id]: 'success' | 'error' }
+    const [donationForm, setDonationForm] = useState({}) // { [registration_id]: { blood_type, units } }
+    const [donationStatus, setDonationStatus] = useState({}) // { [registration_id]: 'success' | 'error' | 'submitting' }
 
     useEffect(() => {
         if (user && user.bloodbank_id) {
@@ -38,6 +40,65 @@ const BloodBankCampRegistrations = ({ user }) => {
             }
         } catch {
             setUpdateStatus({ ...updateStatus, [registration_id]: 'error' })
+        }
+    }
+
+    const handleDonationChange = (registration_id, field, value) => {
+        setDonationForm(prev => ({
+            ...prev,
+            [registration_id]: {
+                ...prev[registration_id],
+                [field]: value
+            }
+        }))
+    }
+
+    const handleAddDonation = async (registration) => {
+        const { donor_id, camp_id, attended } = registration
+        const bloodbank_id = user.bloodbank_id
+        const blood_type = donationForm[registration.registration_id]?.blood_type ?? registration.blood_type
+        const units = donationForm[registration.registration_id]?.units
+
+        // Prevent if not attended
+        if (attended !== 'Y') {
+            setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'error' }))
+            console.log('Cannot add donation: not attended')
+            return
+        }
+
+        // Prevent if already added
+        if (donationStatus[registration.registration_id] === 'success') {
+            setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'already' }))
+            console.log('Donation already added for this registration')
+            return
+        }
+
+        console.log('Add Donation clicked:', { donor_id, bloodbank_id, camp_id, blood_type, units })
+        if (!blood_type || !units) {
+            console.log('Missing blood_type or units')
+            setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'error' }))
+            return
+        }
+        setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'submitting' }))
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/donations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ donor_id, bloodbank_id, camp_id, blood_type, units: Number(units) })
+            })
+            console.log('Donation request sent:', res)
+            const data = await res.json()
+            console.log('Donation response:', data)
+            if (res.ok && data.success) {
+                setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'success' }))
+            } else if (data.error && data.error.includes('already')) {
+                setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'already' }))
+            } else {
+                setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'error' }))
+            }
+        } catch (err) {
+            console.error('Donation error:', err)
+            setDonationStatus(prev => ({ ...prev, [registration.registration_id]: 'error' }))
         }
     }
 
@@ -92,6 +153,51 @@ const BloodBankCampRegistrations = ({ user }) => {
                                     {updateStatus[r.registration_id] === 'error' && (
                                         <span className="text-red-400 ml-2">Error</span>
                                     )}
+                                    {/* Add Donation Form */}
+                                    <div className="mt-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Blood Type"
+                                            value={donationForm[r.registration_id]?.blood_type ?? r.blood_type ?? ''}
+                                            onChange={e => handleDonationChange(r.registration_id, 'blood_type', e.target.value)}
+                                            className="w-20 mr-2 px-2 py-1 rounded bg-black border border-gray-700 text-white"
+                                            disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="Units"
+                                            min="1"
+                                            value={donationForm[r.registration_id]?.units || ''}
+                                            onChange={e => handleDonationChange(r.registration_id, 'units', e.target.value)}
+                                            className="w-16 mr-2 px-2 py-1 rounded bg-black border border-gray-700 text-white"
+                                            disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
+                                        />
+                                        <button
+                                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded font-semibold"
+                                            onClick={() => handleAddDonation(r)}
+                                            disabled={
+                                                donationStatus[r.registration_id] === 'submitting' ||
+                                                donationStatus[r.registration_id] === 'success' ||
+                                                r.attended !== 'Y'
+                                            }
+                                            type="button"
+                                        >
+                                            Add Donation
+                                        </button>
+                                        {donationStatus[r.registration_id] === 'success' && (
+                                            <span className="text-green-400 ml-2">Added!</span>
+                                        )}
+                                        {donationStatus[r.registration_id] === 'error' && (
+                                            <span className="text-red-400 ml-2">
+                                                {r.attended !== 'Y'
+                                                    ? 'Mark as attended before adding donation.'
+                                                    : 'Error'}
+                                            </span>
+                                        )}
+                                        {donationStatus[r.registration_id] === 'already' && (
+                                            <span className="text-yellow-400 ml-2">Donation already added.</span>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}

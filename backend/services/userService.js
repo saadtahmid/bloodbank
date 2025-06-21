@@ -236,6 +236,31 @@ export async function updateRegistrationAttendedStatus(registration_id, attended
     return { success: false, error: 'Registration not found' }
 }
 
+export async function addDonationForRegistration({ donor_id, bloodbank_id, camp_id, blood_type, units }) {
+    console.log('addDonationForRegistration called with:', { donor_id, bloodbank_id, camp_id, blood_type, units })
+
+    // Check if a donation already exists for this registration
+    const existing = await sql`
+        SELECT donation_id FROM bloodbank.Donation
+        WHERE donor_id = ${donor_id} AND camp_id = ${camp_id} AND bloodbank_id = ${bloodbank_id}
+    `
+    if (existing.length > 0) {
+        return { success: false, error: 'Donation already added for this registration' }
+    }
+
+    // Insert into Donation table
+    const result = await sql`
+        INSERT INTO bloodbank.Donation (donor_id, bloodbank_id, camp_id, blood_type, units)
+        VALUES (${donor_id}, ${bloodbank_id}, ${camp_id}, ${blood_type}, ${units})
+        RETURNING donation_id
+    `
+    console.log('SQL insert result:', result)
+    if (result.length > 0) {
+        return { success: true, donation_id: result[0].donation_id }
+    }
+    return { success: false, error: 'Failed to add donation' }
+}
+
 
 
 
