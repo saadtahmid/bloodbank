@@ -8,7 +8,9 @@ import {
     getCampsByDivision,
     registerUserWithRole,
     registerDonorForCamp,
-    getRegisteredCampsForDonor
+    getRegisteredCampsForDonor,
+    getRegistrationsForBloodBank,
+    updateRegistrationAttendedStatus
 } from '../services/userService.js'
 
 const router = Router()
@@ -122,6 +124,39 @@ router.get('/camps/registered/:donor_id', async (req, res) => {
         res.json(result)
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch registered camps' })
+    }
+})
+
+// Get all registrations for all camps organized by a blood bank
+router.get('/camps/registrations/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+    if (!bloodbank_id) {
+        return res.status(400).json({ error: 'bloodbank_id is required' })
+    }
+    try {
+        const result = await getRegistrationsForBloodBank(bloodbank_id)
+        res.json(result)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch registrations' })
+    }
+})
+
+// Update attended status for a registration
+router.put('/camps/registration/:registration_id', async (req, res) => {
+    const { registration_id } = req.params
+    const { attended } = req.body
+    if (!registration_id || !['Y', 'N'].includes(attended)) {
+        return res.status(400).json({ error: 'registration_id and valid attended status are required' })
+    }
+    try {
+        const result = await updateRegistrationAttendedStatus(registration_id, attended)
+        if (result.success) {
+            res.json({ success: true })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update registration' })
     }
 })
 

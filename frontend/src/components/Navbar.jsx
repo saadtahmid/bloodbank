@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const Navbar = () => {
+const Navbar = ({ user, setUser }) => {
     const [showLookingDropdown, setShowLookingDropdown] = useState(false)
     const [showDonateDropdown, setShowDonateDropdown] = useState(false)
     return (
@@ -62,13 +62,32 @@ const Navbar = () => {
                         </ul>
                     )}
                 </li>
+                {user && user.role && user.role.toLowerCase() === 'bloodbank' && (
+                    <li>
+                        <a href="#camp-registrations" className="text-white hover:text-red-500 font-semibold transition-colors">
+                            Camp Registrations
+                        </a>
+                    </li>
+                )}
                 <li className="ml-4">
-                    <a
-                        href="#login"
-                        className="text-white border border-red-500 px-4 py-1 rounded hover:bg-red-600 hover:text-white transition-colors font-semibold"
-                    >
-                        Login
-                    </a>
+                    {user ? (
+                        <button
+                            onClick={() => {
+                                setUser(null)
+                                window.location.hash = '#home'
+                            }}
+                            className="text-white border border-red-500 px-4 py-1 rounded hover:bg-red-600 hover:text-white transition-colors font-semibold"
+                        >
+                            Logout{user.role ? ` (${user.role})` : ''}
+                        </button>
+                    ) : (
+                        <a
+                            href="#login"
+                            className="text-white border border-red-500 px-4 py-1 rounded hover:bg-red-600 hover:text-white transition-colors font-semibold"
+                        >
+                            Login
+                        </a>
+                    )}
                 </li>
             </ul>
         </nav>

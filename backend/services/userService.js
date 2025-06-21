@@ -207,6 +207,35 @@ export async function getRegisteredCampsForDonor(donor_id) {
     }))
 }
 
+export async function getRegistrationsForBloodBank(bloodbank_id) {
+    const result = await sql`
+        SELECT r.registration_id, r.donor_id, d.name as donor_name, d.blood_type, d.gender, d.contact_info,
+               r.camp_id, c.camp_name, r.registration_date, r.attended
+        FROM bloodbank.CampRegistration r
+        JOIN bloodbank.Camp c ON r.camp_id = c.camp_id
+        JOIN bloodbank.Donors d ON r.donor_id = d.donor_id
+        WHERE c.bloodbank_id = ${bloodbank_id}
+        ORDER BY r.registration_date DESC
+    `
+    return result.map(row => ({
+        ...row,
+        registration_date: row.registration_date ? row.registration_date.toISOString().slice(0, 10) : null,
+    }))
+}
+
+export async function updateRegistrationAttendedStatus(registration_id, attended) {
+    const result = await sql`
+        UPDATE bloodbank.CampRegistration
+        SET attended = ${attended}
+        WHERE registration_id = ${registration_id}
+        RETURNING registration_id
+    `
+    if (result.length > 0) {
+        return { success: true }
+    }
+    return { success: false, error: 'Registration not found' }
+}
+
 
 
 
