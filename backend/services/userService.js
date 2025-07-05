@@ -249,16 +249,154 @@ export async function addDonationForRegistration({ donor_id, bloodbank_id, camp_
     }
 
     // Insert into Donation table
-    const result = await sql`
+    const donationResult = await sql`
         INSERT INTO bloodbank.Donation (donor_id, bloodbank_id, camp_id, blood_type, units)
         VALUES (${donor_id}, ${bloodbank_id}, ${camp_id}, ${blood_type}, ${units})
-        RETURNING donation_id
+        RETURNING donation_id, donation_date
     `
-    console.log('SQL insert result:', result)
-    if (result.length > 0) {
-        return { success: true, donation_id: result[0].donation_id }
+    if (donationResult.length === 0) {
+        return { success: false, error: 'Failed to add donation' }
     }
-    return { success: false, error: 'Failed to add donation' }
+    const { donation_id, donation_date } = donationResult[0]
+    const collectedDate = donation_date || new Date()
+    const expiryDate = new Date(collectedDate)
+    expiryDate.setDate(expiryDate.getDate() + 35)
+
+    // Insert 1 row per unit
+    for (let i = 0; i < units; i++) {
+        await sql`
+            INSERT INTO bloodbank.BloodUnit (bloodbank_id, blood_type, units, donation_id, collected_date, expiry_date, status)
+            VALUES (
+                ${bloodbank_id},
+                ${blood_type},
+                1,
+                ${donation_id},
+                ${collectedDate},
+                ${expiryDate},
+                'AVAILABLE'
+            )
+        `
+    }
+    return { success: true, donation_id }
+}
+
+export async function createBloodRequest({ hospital_id, blood_type, units_requested, requested_to }) {
+    const result = await sql`
+        INSERT INTO bloodbank.BloodRequest (hospital_id, blood_type, units_requested, requested_to)
+        VALUES (${hospital_id}, ${blood_type}, ${units_requested}, ${requested_to})
+        RETURNING request_id
+    `
+    if (result.length > 0) {
+        return { success: true, request_id: result[0].request_id }
+    }
+    return { success: false, error: 'Failed to create blood request' }
+}
+
+export async function getBloodRequestsForBank(bloodbank_id) {
+    const result = await sql`
+        SELECT r.*, h.name as hospital_name
+        FROM bloodbank.BloodRequest r
+        JOIN bloodbank.Hospital h ON r.hospital_id = h.hospital_id
+        WHERE r.requested_to = ${bloodbank_id}
+        ORDER BY r.request_date DESC
+    `
+    return result.map(r => ({
+        ...r,
+        request_date: r.request_date ? r.request_date.toISOString().slice(0, 10) : null,
+    }))
+}
+
+export async function getAvailableBloodUnitsForBank(bloodbank_id) {
+    const result = await sql`
+        SELECT unit_id, blood_type, units, collected_date, expiry_date, status
+        FROM bloodbank.BloodUnit
+        WHERE bloodbank_id = ${bloodbank_id} AND status = 'AVAILABLE'
+        ORDER BY blood_type, expiry_date
+    `
+    return result.map(u => ({
+        ...u,
+        collected_date: u.collected_date ? u.collected_date.toISOString().slice(0, 10) : null,
+        expiry_date: u.expiry_date ? u.expiry_date.toISOString().slice(0, 10) : null,
+    }))
+}
+
+export async function fulfillBloodRequest(request_id) {
+    // Get request details
+    const req = await sql`
+        SELECT * FROM bloodbank.BloodRequest WHERE request_id = ${request_id}
+    `
+    if (!req[0]) return { success: false, error: 'Request not found' }
+    const { blood_type, units_requested, requested_to } = req[0]
+
+    // Get available units (oldest first)
+    const available = await sql`
+        SELECT unit_id FROM bloodbank.BloodUnit
+        WHERE bloodbank_id = ${requested_to}
+          AND blood_type = ${blood_type}
+          AND status = 'AVAILABLE'
+        ORDER BY expiry_date ASC, collected_date ASC
+        LIMIT ${units_requested}
+    `
+    if (available.length < units_requested) {
+        return { success: false, error: 'Not enough units available' }
+    }
+
+    // Mark units as USED
+    const unitIds = available.map(u => u.unit_id)
+    await sql`
+        UPDATE bloodbank.BloodUnit
+        SET status = 'USED'
+        WHERE unit_id = ANY(${unitIds})
+    `
+
+    // Update request status
+    await sql`
+        UPDATE bloodbank.BloodRequest
+        SET status = 'FULFILLED'
+        WHERE request_id = ${request_id}
+    `
+
+    return { success: true, used_units: unitIds }
+}
+
+export async function getDonorById(donor_id) {
+    const result = await sql`
+        SELECT * FROM bloodbank.Donors WHERE donor_id = ${donor_id}
+    `
+    return result[0] || null
+}
+
+export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, units }) {
+    // Insert into Donation table (no camp_id)
+    const donationResult = await sql`
+        INSERT INTO bloodbank.Donation (donor_id, bloodbank_id, blood_type, units)
+        VALUES (${donor_id}, ${bloodbank_id}, ${blood_type}, ${units})
+        RETURNING donation_id, donation_date
+    `
+    if (donationResult.length === 0) {
+        return { success: false, error: 'Failed to add donation' }
+    }
+    const { donation_id, donation_date } = donationResult[0]
+    const collectedDate = donation_date || new Date()
+    const expiryDate = new Date(collectedDate)
+    expiryDate.setDate(expiryDate.getDate() + 35)
+
+    // Insert 1 row per unit
+    for (let i = 0; i < units; i++) {
+        await sql`
+            INSERT INTO bloodbank.BloodUnit (bloodbank_id, blood_type, units, donation_id, collected_date, expiry_date, status)
+            VALUES (
+                ${bloodbank_id},
+                ${blood_type},
+                1,
+                ${donation_id},
+                ${collectedDate},
+                ${expiryDate},
+                'AVAILABLE'
+            )
+        `
+    }
+    return { success: true, donation_id }
 }
 
 

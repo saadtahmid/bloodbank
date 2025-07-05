@@ -63,11 +63,28 @@ const Navbar = ({ user, setUser }) => {
                     )}
                 </li>
                 {user && user.role && user.role.toLowerCase() === 'bloodbank' && (
-                    <li>
-                        <a href="#camp-registrations" className="text-white hover:text-red-500 font-semibold transition-colors">
-                            Camp Registrations
-                        </a>
-                    </li>
+                    <>
+                        <li>
+                            <a href="#camp-registrations" className="text-white hover:text-red-500 font-semibold transition-colors">
+                                Camp Registrations
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#blood-requests" className="text-white hover:text-red-500 font-semibold transition-colors">
+                                Blood Requests
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#blood-inventory" className="text-white hover:text-red-500 font-semibold transition-colors">
+                                Blood Inventory
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#add-donation" className="text-white hover:text-red-500 font-semibold transition-colors">
+                                Add Donation
+                            </a>
+                        </li>
+                    </>
                 )}
                 <li className="ml-4">
                     {user ? (

@@ -11,7 +11,13 @@ import {
     getRegisteredCampsForDonor,
     getRegistrationsForBloodBank,
     updateRegistrationAttendedStatus,
-    addDonationForRegistration
+    addDonationForRegistration,
+    createBloodRequest,
+    getBloodRequestsForBank,
+    getAvailableBloodUnitsForBank,
+    fulfillBloodRequest,
+    getDonorById,
+    addDirectDonation
 } from '../services/userService.js'
 
 const router = Router()
@@ -180,6 +186,98 @@ router.post('/donations', async (req, res) => {
         }
     } catch (err) {
         console.error('Failed to add donation:', err)
+        res.status(500).json({ error: 'Failed to add donation' })
+    }
+})
+
+// Hospital requests blood from a blood bank
+router.post('/blood-requests', async (req, res) => {
+    const { hospital_id, blood_type, units_requested, requested_to } = req.body
+    if (!hospital_id || !blood_type || !units_requested || !requested_to) {
+        return res.status(400).json({ error: 'All fields are required' })
+    }
+    try {
+        const result = await createBloodRequest({ hospital_id, blood_type, units_requested, requested_to })
+        if (result.success) {
+            res.json({ success: true, request_id: result.request_id })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create blood request' })
+    }
+})
+
+// Blood banks can view requests sent to them
+router.get('/blood-requests/for-bank/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+    if (!bloodbank_id) {
+        return res.status(400).json({ error: 'bloodbank_id is required' })
+    }
+    try {
+        const result = await getBloodRequestsForBank(bloodbank_id)
+        res.json(result)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch blood requests' })
+    }
+})
+
+// Get available blood units for a blood bank
+router.get('/blood-units/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+    if (!bloodbank_id) {
+        return res.status(400).json({ error: 'bloodbank_id is required' })
+    }
+    try {
+        const units = await getAvailableBloodUnitsForBank(bloodbank_id)
+        res.json(units)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch blood units' })
+    }
+})
+
+// Fulfill a blood request
+router.post('/blood-requests/fulfill/:request_id', async (req, res) => {
+    const { request_id } = req.params
+    try {
+        const result = await fulfillBloodRequest(request_id)
+        if (result.success) {
+            res.json({ success: true, used_units: result.used_units })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fulfill request' })
+    }
+})
+
+// Get donor info by donor_id
+router.get('/donors/:donor_id', async (req, res) => {
+    const { donor_id } = req.params
+    if (!donor_id) return res.status(400).json({ error: 'donor_id is required' })
+    try {
+        const donor = await getDonorById(donor_id)
+        if (donor) res.json(donor)
+        else res.status(404).json({ error: 'Donor not found' })
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch donor' })
+    }
+})
+
+// Add direct donation (no camp)
+router.post('/donations/direct', async (req, res) => {
+    const { donor_id, bloodbank_id, blood_type, units } = req.body
+    if (!donor_id || !bloodbank_id || !blood_type || !units) {
+        return res.status(400).json({ error: 'All fields are required' })
+    }
+    try {
+        const result = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units })
+        if (result.success) {
+            res.json({ success: true, donation_id: result.donation_id })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
         res.status(500).json({ error: 'Failed to add donation' })
     }
 })

@@ -8,6 +8,9 @@ import Login from './components/Login'
 import RequestBlood from './components/RequestBlood'
 import ViewCamps from './components/ViewCamps'
 import BloodBankCampRegistrations from './components/BloodBankCampRegistrations'
+import BloodBankRequests from './components/BloodBankRequests'
+import BloodInventory from './components/BloodInventory'
+import AddDirectDonation from './components/AddDirectDonation'
 import { useEffect, useState } from 'react'
 
 function App() {
@@ -16,6 +19,9 @@ function App() {
   const [showRequestBlood, setShowRequestBlood] = useState(false)
   const [showViewCamps, setShowViewCamps] = useState(false)
   const [showCampRegistrations, setShowCampRegistrations] = useState(false)
+  const [showBloodRequests, setShowBloodRequests] = useState(false)
+  const [showBloodInventory, setShowBloodInventory] = useState(false)
+  const [showAddDonation, setShowAddDonation] = useState(false)
   const [user, setUser] = useState(null) // Store logged-in user
 
   useEffect(() => {
@@ -25,6 +31,9 @@ function App() {
       setShowRequestBlood(window.location.hash === '#request-blood')
       setShowViewCamps(window.location.hash === '#view-camps')
       setShowCampRegistrations(window.location.hash === '#camp-registrations')
+      setShowBloodRequests(window.location.hash === '#blood-requests')
+      setShowBloodInventory(window.location.hash === '#blood-inventory')
+      setShowAddDonation(window.location.hash === '#add-donation')
     }
     window.addEventListener('hashchange', handleHashChange)
     handleHashChange()
@@ -47,6 +56,12 @@ function App() {
           <BloodBankDirectory />
         ) : showCampRegistrations ? (
           <BloodBankCampRegistrations user={user} />
+        ) : showBloodRequests ? (
+          <BloodBankRequests user={user} />
+        ) : showBloodInventory ? (
+          <BloodInventory user={user} />
+        ) : showAddDonation ? (
+          <AddDirectDonation user={user} />
         ) : (
           <>
             <Intro />
