@@ -19,7 +19,9 @@ import {
     getDonorById,
     addDirectDonation,
     getUrgentNeedsForDonor,
-    getUrgentNeedsForBank
+    getUrgentNeedsForBank,
+    getDonorsByBloodType,
+    fulfillUrgentNeed
 } from '../services/userService.js'
 
 const router = Router()
@@ -301,6 +303,36 @@ router.get('/urgent-needs/for-bank/:bloodbank_id', async (req, res) => {
         res.json(urgent)
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch urgent needs' })
+    }
+})
+
+// Get all donors for a blood type
+router.get('/donors/by-blood-type/:blood_type', async (req, res) => {
+    const { blood_type } = req.params
+    try {
+        const donors = await getDonorsByBloodType(blood_type)
+        res.json(donors)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch donors' })
+    }
+})
+
+// Fulfill urgent need
+router.post('/urgent-needs/fulfill/:urgent_need_id', async (req, res) => {
+    const { urgent_need_id } = req.params
+    const { donor_id, bloodbank_id, units } = req.body
+    if (!donor_id || !bloodbank_id || !units) {
+        return res.status(400).json({ error: 'All fields are required' })
+    }
+    try {
+        const result = await fulfillUrgentNeed({ urgent_need_id, donor_id, bloodbank_id, units })
+        if (result.success) {
+            res.json({ success: true })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fulfill urgent need' })
     }
 })
 

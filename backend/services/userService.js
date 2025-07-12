@@ -469,6 +469,32 @@ export async function getUrgentNeedsForBank(bloodbank_id) {
     return urgent
 }
 
+export async function getDonorsByBloodType(blood_type) {
+    const result = await sql`
+        SELECT * FROM bloodbank.Donors WHERE blood_type = ${blood_type}
+    `
+    return result
+}
+
+export async function fulfillUrgentNeed({ urgent_need_id, donor_id, bloodbank_id, units }) {
+    // Get urgent need details
+    const urgent = await sql`SELECT * FROM bloodbank.UrgentNeed WHERE urgent_need_id = ${urgent_need_id} AND status = 'OPEN'`
+    if (!urgent[0]) return { success: false, error: 'Urgent need not found or already fulfilled' }
+    const blood_type = urgent[0].blood_type
+
+    // Add donation
+    const donationResult = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units })
+    if (!donationResult.success) return { success: false, error: 'Failed to add donation' }
+
+    // Mark urgent need as fulfilled
+    await sql`
+        UPDATE bloodbank.UrgentNeed
+        SET status = 'FULFILLED'
+        WHERE urgent_need_id = ${urgent_need_id}
+    `
+    return { success: true }
+}
+
 
 
 
