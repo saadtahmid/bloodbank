@@ -84,7 +84,19 @@ const Navbar = ({ user, setUser }) => {
                                 Add Donation
                             </a>
                         </li>
+                        <li>
+                            <a href="#urgent-needs" className="text-white hover:text-red-500 font-semibold transition-colors">
+                                Urgent Needs
+                            </a>
+                        </li>
                     </>
+                )}
+                {user && user.role && user.role.toLowerCase() === 'donor' && (
+                    <li>
+                        <a href="#urgent-needs" className="text-white hover:text-red-500 font-semibold transition-colors">
+                            Urgent Needs
+                        </a>
+                    </li>
                 )}
                 <li className="ml-4">
                     {user ? (

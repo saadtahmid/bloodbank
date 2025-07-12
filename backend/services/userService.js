@@ -38,9 +38,22 @@ function hashPassword(password) {
 
 function verifyPassword(password, hashed) {
     const [salt, key] = hashed.split(':')
-    const hashBuffer = Buffer.from(key, 'hex')
-    const testBuffer = scryptSync(password, salt, 32)
-    return timingSafeEqual(hashBuffer, testBuffer)
+    // Try base64 first
+    try {
+        const hashBuffer = Buffer.from(key, 'base64')
+        const testBuffer = scryptSync(password, salt, 32)
+        if (timingSafeEqual(hashBuffer, testBuffer)) return true
+    } catch { }
+    // Fallback to hex for old passwords
+    try {
+        const hashBuffer = Buffer.from(key, 'hex')
+        const testBuffer = scryptSync(password, salt, 32)
+        if (timingSafeEqual(hashBuffer, testBuffer)) {
+            // Optionally: re-hash and update password in DB to base64
+            return true
+        }
+    } catch { }
+    return false
 }
 
 export async function registerUserWithRole(email, password, role, details) {
@@ -49,25 +62,43 @@ export async function registerUserWithRole(email, password, role, details) {
     if (existing.length > 0) {
         return { success: false, error: 'User already exists' }
     }
-
+    const userCount = await sql`SELECT MAX(USER_ID) as count FROM bloodbank.Users`
+    console.log('User count before insert:', userCount[0].count)
+    console.log('registerUserWithRole called with:', { email, role, details })
     // Hash the password
     const hashedPassword = hashPassword(password)
+    console.log('Hashed password:', hashedPassword)
+    //find count of users before insert
 
-    // Insert into Users table
+    //userCount[0].count this is string cast to integer 
+    const userCountInt = parseInt(userCount[0].count, 10) + 1
+    const user_id = userCountInt
+
+
+
+
+
+
+
     const userRes = await sql`
-        INSERT INTO bloodbank.Users (email, password, role)
-        VALUES (${email}, ${hashedPassword}, ${role})
+        INSERT INTO bloodbank.Users (user_id,email, password, role)
+        VALUES (${user_id},${email}, ${hashedPassword}, ${role})
         RETURNING user_id
     `
-    const user_id = userRes[0]?.user_id
-    if (!user_id) return { success: false, error: 'User creation failed' }
 
+    if (!user_id) return { success: false, error: 'User creation failed' }
+    console.log('User ID:', user_id)
     // Insert into role-specific table
     if (role.toUpperCase() === 'DONOR') {
+        const DonorCount = await sql`SELECT Max(DONOR_ID) as count FROM bloodbank.Donors`
+        const DonorCountInt = parseInt(DonorCount[0].count, 10) + 1
+        const donor_id = DonorCountInt
+        console.log('Donor ID:', donor_id)
         await sql`
             INSERT INTO bloodbank.Donors
-            (user_id, name, gender, blood_type, weight, location, contact_info, last_donation_date, birth_date)
+            (donor_id,user_id, name, gender, blood_type, weight, location, contact_info, last_donation_date, birth_date)
             VALUES (
+                ${donor_id},
                 ${user_id},
                 ${details.name || null},
                 ${details.gender || null},
@@ -80,10 +111,16 @@ export async function registerUserWithRole(email, password, role, details) {
             )
         `
     } else if (role.toUpperCase() === 'HOSPITAL') {
+        const HospitalCount = await sql`SELECT Max(HOSPITAL_ID) as count FROM bloodbank.Hospital`
+        const HospitalCountInt = parseInt(HospitalCount[0].count, 10) + 1
+        const hospital_id = HospitalCountInt
+        console.log('Hospital ID:', hospital_id)
         await sql`
             INSERT INTO bloodbank.Hospital
-            (user_id, name, location, contact_info)
+            (
+            hospital_id,user_id, name, location, contact_info)
             VALUES (
+                ${hospital_id},
                 ${user_id},
                 ${details.name || null},
                 ${details.location || null},
@@ -91,10 +128,15 @@ export async function registerUserWithRole(email, password, role, details) {
             )
         `
     } else if (role.toUpperCase() === 'BLOODBANK') {
+        const BloodBankCount = await sql`SELECT Max(BLOODBANK_ID) as count FROM bloodbank.BloodBank`
+        const BloodBankCountInt = parseInt(BloodBankCount[0].count, 10) + 1
+        const bloodbank_id = BloodBankCountInt
+        console.log('Blood Bank ID:', bloodbank_id)
         await sql`
             INSERT INTO bloodbank.BloodBank
-            (user_id, name, location, contact_number)
+            (bloodbank_id,user_id, name, location, contact_number)
             VALUES (
+                ${bloodbank_id},
                 ${user_id},
                 ${details.name || null},
                 ${details.location || null},
@@ -102,6 +144,7 @@ export async function registerUserWithRole(email, password, role, details) {
             )
         `
     }
+    console.log('Role-specific details inserted')
     return { success: true, user_id }
 }
 
@@ -141,12 +184,17 @@ export async function findUserByEmailAndRole(email, password, role) {
         `
     }
     if (result.length === 0) return null
+    console.log('findUserByEmailAndRole result:', result)
     const user = result[0]
+    console.log('User found:', user)
+    console.log('Verifying password for user:', password)
     if (verifyPassword(password, user.password)) {
         // Do not return password hash
         const { password, ...userWithoutPassword } = user
+        console.log('User authenticated successfully:', userWithoutPassword)
         return userWithoutPassword
     }
+    console.log('Invalid password for user:', email)
     return null
 }
 
@@ -397,6 +445,28 @@ export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, un
         `
     }
     return { success: true, donation_id }
+}
+
+// Get urgent needs for a donor (by blood type)
+export async function getUrgentNeedsForDonor(donor_id) {
+    const donor = await sql`SELECT blood_type FROM bloodbank.Donors WHERE donor_id = ${donor_id}`
+    if (!donor[0]) return []
+    const urgent = await sql`
+        SELECT * FROM bloodbank.UrgentNeed
+        WHERE status = 'OPEN' AND blood_type = ${donor[0].blood_type}
+        ORDER BY posted_date DESC
+    `
+    return urgent
+}
+
+// Get urgent needs for a blood bank
+export async function getUrgentNeedsForBank(bloodbank_id) {
+    const urgent = await sql`
+        SELECT * FROM bloodbank.UrgentNeed
+        WHERE status = 'OPEN' AND bloodbank_id = ${bloodbank_id}
+        ORDER BY posted_date DESC
+    `
+    return urgent
 }
 
 

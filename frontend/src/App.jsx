@@ -11,6 +11,8 @@ import BloodBankCampRegistrations from './components/BloodBankCampRegistrations'
 import BloodBankRequests from './components/BloodBankRequests'
 import BloodInventory from './components/BloodInventory'
 import AddDirectDonation from './components/AddDirectDonation'
+import DonorUrgentNeeds from './components/DonorUrgentNeeds'
+import BloodBankUrgentNeeds from './components/BloodBankUrgentNeeds'
 import { useEffect, useState } from 'react'
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
   const [showBloodRequests, setShowBloodRequests] = useState(false)
   const [showBloodInventory, setShowBloodInventory] = useState(false)
   const [showAddDonation, setShowAddDonation] = useState(false)
+  const [showUrgentNeeds, setShowUrgentNeeds] = useState(false)
   const [user, setUser] = useState(null) // Store logged-in user
 
   useEffect(() => {
@@ -34,6 +37,7 @@ function App() {
       setShowBloodRequests(window.location.hash === '#blood-requests')
       setShowBloodInventory(window.location.hash === '#blood-inventory')
       setShowAddDonation(window.location.hash === '#add-donation')
+      setShowUrgentNeeds(window.location.hash === '#urgent-needs')
     }
     window.addEventListener('hashchange', handleHashChange)
     handleHashChange()
@@ -62,6 +66,12 @@ function App() {
           <BloodInventory user={user} />
         ) : showAddDonation ? (
           <AddDirectDonation user={user} />
+        ) : showUrgentNeeds ? (
+          user && user.role && user.role.toLowerCase() === 'donor' ? (
+            <DonorUrgentNeeds donor_id={user.donor_id} />
+          ) : user && user.role && user.role.toLowerCase() === 'bloodbank' ? (
+            <BloodBankUrgentNeeds bloodbank_id={user.bloodbank_id} />
+          ) : null
         ) : (
           <>
             <Intro />

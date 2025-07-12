@@ -17,7 +17,9 @@ import {
     getAvailableBloodUnitsForBank,
     fulfillBloodRequest,
     getDonorById,
-    addDirectDonation
+    addDirectDonation,
+    getUrgentNeedsForDonor,
+    getUrgentNeedsForBank
 } from '../services/userService.js'
 
 const router = Router()
@@ -279,6 +281,26 @@ router.post('/donations/direct', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Failed to add donation' })
+    }
+})
+
+// For donors
+router.get('/urgent-needs/for-donor/:donor_id', async (req, res) => {
+    try {
+        const urgent = await getUrgentNeedsForDonor(req.params.donor_id)
+        res.json(urgent)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch urgent needs' })
+    }
+})
+
+// For blood banks
+router.get('/urgent-needs/for-bank/:bloodbank_id', async (req, res) => {
+    try {
+        const urgent = await getUrgentNeedsForBank(req.params.bloodbank_id)
+        res.json(urgent)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch urgent needs' })
     }
 })
 

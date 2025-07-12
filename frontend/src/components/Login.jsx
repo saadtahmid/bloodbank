@@ -30,7 +30,6 @@ const Login = ({ setUser }) => {
         location: '',
         contact_number: '',
         // Donor
-        age: '',
         gender: '',
         blood_type: '',
         weight: '',
