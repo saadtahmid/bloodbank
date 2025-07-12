@@ -155,9 +155,12 @@ const Navbar = ({ user, setUser }) => {
                         className="relative"
                         onClick={() => setShowNotifications(!showNotifications)}
                     >
-                        <span role="img" aria-label="notifications">🔔</span>
+                        <span role="img" aria-label="notifications" className="text-2xl">🔔</span>
                         {notifCount > 0 && (
-                            <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs px-2 py-0.5">
+                            <span
+                                className="absolute -top-2 -right-3 bg-red-500 text-white rounded-full text-xs px-2 py-0.5 shadow"
+                                style={{ minWidth: '1.5em', textAlign: 'center' }}
+                            >
                                 {notifCount}
                             </span>
                         )}
