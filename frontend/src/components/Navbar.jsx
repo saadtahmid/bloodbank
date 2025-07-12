@@ -1,8 +1,40 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
+import NotificationMenu from './NotificationMenu'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const Navbar = ({ user, setUser }) => {
     const [showLookingDropdown, setShowLookingDropdown] = useState(false)
     const [showDonateDropdown, setShowDonateDropdown] = useState(false)
+    const [showNotifications, setShowNotifications] = useState(false)
+    const [notifCount, setNotifCount] = useState(0)
+    const notifRef = useRef(null)
+
+    useEffect(() => {
+        if (user && user.user_id) {
+            fetch(`${API_BASE_URL}/api/notifications/latest/${user.user_id}`)
+                .then(res => res.json())
+                .then(data => setNotifCount(data.length))
+                .catch(() => setNotifCount(0))
+        }
+    }, [user, showNotifications])
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setShowNotifications(false)
+            }
+        }
+        if (showNotifications) {
+            document.addEventListener('mousedown', handleClickOutside)
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [showNotifications])
+
     return (
         <nav className="bg-black shadow-md sticky top-0 z-50">
             <ul className="flex justify-center gap-8 py-4 relative">
@@ -116,6 +148,24 @@ const Navbar = ({ user, setUser }) => {
                         >
                             Login
                         </a>
+                    )}
+                </li>
+                <li className="relative">
+                    <button
+                        className="relative"
+                        onClick={() => setShowNotifications(!showNotifications)}
+                    >
+                        <span role="img" aria-label="notifications">🔔</span>
+                        {notifCount > 0 && (
+                            <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs px-2 py-0.5">
+                                {notifCount}
+                            </span>
+                        )}
+                    </button>
+                    {showNotifications && (
+                        <div ref={notifRef}>
+                            <NotificationMenu user={user} />
+                        </div>
                     )}
                 </li>
             </ul>

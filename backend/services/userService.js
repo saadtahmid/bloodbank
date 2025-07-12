@@ -310,21 +310,6 @@ export async function addDonationForRegistration({ donor_id, bloodbank_id, camp_
     const expiryDate = new Date(collectedDate)
     expiryDate.setDate(expiryDate.getDate() + 35)
 
-    // Insert 1 row per unit
-    for (let i = 0; i < units; i++) {
-        await sql`
-            INSERT INTO bloodbank.BloodUnit (bloodbank_id, blood_type, units, donation_id, collected_date, expiry_date, status)
-            VALUES (
-                ${bloodbank_id},
-                ${blood_type},
-                1,
-                ${donation_id},
-                ${collectedDate},
-                ${expiryDate},
-                'AVAILABLE'
-            )
-        `
-    }
     return { success: true, donation_id }
 }
 
@@ -414,11 +399,11 @@ export async function getDonorById(donor_id) {
     return result[0] || null
 }
 
-export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, units }) {
+export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, units, urgent_need_id = null }) {
     // Insert into Donation table (no camp_id)
     const donationResult = await sql`
-        INSERT INTO bloodbank.Donation (donor_id, bloodbank_id, blood_type, units)
-        VALUES (${donor_id}, ${bloodbank_id}, ${blood_type}, ${units})
+        INSERT INTO bloodbank.Donation (donor_id, bloodbank_id, blood_type, units, urgent_need_id)
+        VALUES (${donor_id}, ${bloodbank_id}, ${blood_type}, ${units}, ${urgent_need_id})
         RETURNING donation_id, donation_date
     `
     if (donationResult.length === 0) {
@@ -429,21 +414,7 @@ export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, un
     const expiryDate = new Date(collectedDate)
     expiryDate.setDate(expiryDate.getDate() + 35)
 
-    // Insert 1 row per unit
-    for (let i = 0; i < units; i++) {
-        await sql`
-            INSERT INTO bloodbank.BloodUnit (bloodbank_id, blood_type, units, donation_id, collected_date, expiry_date, status)
-            VALUES (
-                ${bloodbank_id},
-                ${blood_type},
-                1,
-                ${donation_id},
-                ${collectedDate},
-                ${expiryDate},
-                'AVAILABLE'
-            )
-        `
-    }
+
     return { success: true, donation_id }
 }
 
@@ -482,8 +453,8 @@ export async function fulfillUrgentNeed({ urgent_need_id, donor_id, bloodbank_id
     if (!urgent[0]) return { success: false, error: 'Urgent need not found or already fulfilled' }
     const blood_type = urgent[0].blood_type
 
-    // Add donation
-    const donationResult = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units })
+    // Add donation, pass urgent_need_id
+    const donationResult = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units, urgent_need_id })
     if (!donationResult.success) return { success: false, error: 'Failed to add donation' }
 
     // Mark urgent need as fulfilled
@@ -493,6 +464,26 @@ export async function fulfillUrgentNeed({ urgent_need_id, donor_id, bloodbank_id
         WHERE urgent_need_id = ${urgent_need_id}
     `
     return { success: true }
+}
+
+export async function getLatestUnseenNotifications(user_id) {
+    const result = await sql`
+        SELECT notification_id, description, time
+        FROM bloodbank.notification
+        WHERE user_id = ${user_id} AND seen = 'N'
+        ORDER BY time DESC
+        LIMIT 10
+    `
+    return result
+}
+
+export async function markNotificationAsSeen(notification_id) {
+    await sql`
+        UPDATE bloodbank.notification
+        SET seen = 'Y'
+        WHERE notification_id = ${notification_id}
+    `
+    return true
 }
 
 

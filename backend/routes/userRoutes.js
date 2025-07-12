@@ -21,7 +21,9 @@ import {
     getUrgentNeedsForDonor,
     getUrgentNeedsForBank,
     getDonorsByBloodType,
-    fulfillUrgentNeed
+    fulfillUrgentNeed,
+    getLatestUnseenNotifications,
+    markNotificationAsSeen
 } from '../services/userService.js'
 
 const router = Router()
@@ -333,6 +335,26 @@ router.post('/urgent-needs/fulfill/:urgent_need_id', async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: 'Failed to fulfill urgent need' })
+    }
+})
+
+// Get latest unseen notifications for a user
+router.get('/notifications/latest/:user_id', async (req, res) => {
+    try {
+        const notifications = await getLatestUnseenNotifications(req.params.user_id)
+        res.json(notifications)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load notifications' })
+    }
+})
+
+// Mark notification as seen
+router.post('/notifications/seen/:notification_id', async (req, res) => {
+    try {
+        await markNotificationAsSeen(req.params.notification_id)
+        res.json({ success: true })
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to mark notification as seen' })
     }
 })
 
