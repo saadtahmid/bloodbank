@@ -42,9 +42,15 @@ const BloodBankUrgentNeeds = ({ bloodbank_id }) => {
         })
         const data = await res.json()
         if (res.ok && data.success) {
-            setStatus('Urgent need fulfilled!')
+            setStatus('✅ Urgent need fulfilled successfully!')
             setSelectedNeed(null)
-            // Optionally refresh urgent needs list
+            // Refresh urgent needs list
+            setLoading(true)
+            fetch(`${API_BASE_URL}/api/urgent-needs/for-bank/${bloodbank_id}`)
+                .then(res => res.json())
+                .then(data => setUrgentNeeds(data))
+                .catch(() => setUrgentNeeds([]))
+                .finally(() => setLoading(false))
         } else {
             setStatus(data.error || 'Failed to fulfill urgent need')
         }
