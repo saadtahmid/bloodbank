@@ -21,15 +21,23 @@ const BloodInventory = ({ user }) => {
     }, [user])
 
     if (!user || user.role.toLowerCase() !== 'bloodbank') {
-        return <div className="text-center text-red-500 mt-10">Only blood banks can view this page.</div>
+        return (
+            <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 flex items-center justify-center">
+                <div className="glass-effect rounded-2xl p-12 text-center animate-fadeInUp max-w-md">
+                    <div className="text-6xl mb-6">🏥</div>
+                    <h2 className="text-2xl font-bold text-red-400 mb-4">Access Restricted</h2>
+                    <p className="text-gray-300 leading-relaxed">
+                        Only blood banks can view this page.
+                    </p>
+                </div>
+            </section>
+        )
     }
 
-    // Filtered units
     const filteredUnits = filter === 'ALL'
         ? units
         : units.filter(u => u.blood_type === filter)
 
-    // Calculate total count for each blood group
     const bloodTypeTotals = BLOOD_TYPES.reduce((acc, type) => {
         acc[type] = units
             .filter(u => u.blood_type === type)
@@ -38,58 +46,111 @@ const BloodInventory = ({ user }) => {
     }, {})
 
     return (
-        <section className="bg-black text-white py-8 flex flex-col items-center min-h-screen">
-            <h2 className="text-2xl font-bold text-red-500 mb-4">Blood Inventory</h2>
-            <div className="mb-4 flex flex-wrap gap-2 items-center">
-                <label className="mr-2 font-semibold">Filter by Blood Group:</label>
-                <select
-                    className="bg-gray-900 border border-red-500 text-white px-4 py-2 rounded"
-                    value={filter}
-                    onChange={e => setFilter(e.target.value)}
-                >
-                    <option value="ALL">All</option>
-                    {BLOOD_TYPES.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
-            </div>
-            <div className="mb-6 w-full max-w-2xl">
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Total Units by Blood Group</h3>
-                <div className="grid grid-cols-4 gap-2">
-                    {BLOOD_TYPES.map(type => (
-                        <div key={type} className="bg-gray-800 rounded px-3 py-2 flex flex-col items-center">
-                            <span className="font-bold text-red-300">{type}</span>
-                            <span className="text-white">{bloodTypeTotals[type]}</span>
-                        </div>
-                    ))}
+        <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 text-white py-12 relative overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute top-20 left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+            <div className="absolute bottom-20 right-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+
+            <div className="relative z-10 max-w-6xl mx-auto px-8">
+                <div className="text-center mb-12 animate-fadeInUp">
+                    <h2 className="text-4xl font-bold gradient-text mb-4 flex items-center justify-center">
+                        <span className="mr-3">📊</span>
+                        Blood Inventory
+                    </h2>
+                    <p className="text-xl text-gray-300 leading-relaxed">
+                        Monitor and manage your blood unit inventory
+                    </p>
                 </div>
-            </div>
-            {loading ? (
-                <div className="text-gray-400">Loading...</div>
-            ) : filteredUnits.length === 0 ? (
-                <div className="text-gray-400">No available blood units{filter !== 'ALL' && ` for ${filter}`}.</div>
-            ) : (
-                <table className="min-w-full bg-gray-900 border border-red-500 rounded">
-                    <thead>
-                        <tr>
-                            <th className="px-2 py-1 border-b border-red-500">Blood Type</th>
-                            <th className="px-2 py-1 border-b border-red-500">Units</th>
-                            <th className="px-2 py-1 border-b border-red-500">Collected Date</th>
-                            <th className="px-2 py-1 border-b border-red-500">Expiry Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredUnits.map(u => (
-                            <tr key={u.unit_id}>
-                                <td className="px-2 py-1">{u.blood_type}</td>
-                                <td className="px-2 py-1">{u.units}</td>
-                                <td className="px-2 py-1">{u.collected_date}</td>
-                                <td className="px-2 py-1">{u.expiry_date}</td>
-                            </tr>
+
+                {/* Blood Type Summary */}
+                <div className="glass-effect rounded-2xl p-6 mb-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                    <h3 className="text-xl font-bold text-red-400 mb-4 flex items-center">
+                        <span className="mr-2">📈</span>
+                        Total Units by Blood Group
+                    </h3>
+                    <div className="grid grid-cols-4 gap-4">
+                        {BLOOD_TYPES.map(type => (
+                            <div key={type} className="bg-gray-900/50 rounded-xl p-4 card-hover text-center">
+                                <div className="text-2xl font-bold text-red-400 mb-1">{type}</div>
+                                <div className="text-xl text-white font-semibold">{bloodTypeTotals[type]}</div>
+                                <div className="text-xs text-gray-400">units</div>
+                            </div>
                         ))}
-                    </tbody>
-                </table>
-            )}
+                    </div>
+                </div>
+
+                {/* Filter */}
+                <div className="glass-effect rounded-2xl p-4 mb-8 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label className="text-sm font-semibold text-red-400 mr-4">Filter by Blood Group:</label>
+                        <select
+                            className="input-modern px-4 py-2 rounded-xl text-white"
+                            value={filter}
+                            onChange={e => setFilter(e.target.value)}
+                        >
+                            <option value="ALL">All Blood Types</option>
+                            {BLOOD_TYPES.map(type => (
+                                <option key={type} value={type} className="bg-gray-800">{type}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Inventory Table */}
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
+                        <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
+                        <p className="text-gray-400">Loading inventory...</p>
+                    </div>
+                ) : filteredUnits.length === 0 ? (
+                    <div className="text-center py-20 animate-fadeInUp">
+                        <div className="glass-effect rounded-2xl p-12 max-w-md mx-auto">
+                            <div className="text-6xl mb-4">📦</div>
+                            <h3 className="text-2xl font-bold text-red-400 mb-4">No Units Found</h3>
+                            <p className="text-gray-300">
+                                No available blood units{filter !== 'ALL' && ` for ${filter}`}.
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="glass-effect rounded-2xl overflow-hidden animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-900/50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Blood Type</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Units</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Collected Date</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Expiry Date</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredUnits.map((u, index) => (
+                                        <tr
+                                            key={u.unit_id}
+                                            className="border-t border-gray-700/50 hover:bg-white/5 transition-colors duration-200"
+                                            style={{ animationDelay: `${index * 0.05}s` }}
+                                        >
+                                            <td className="px-6 py-4">
+                                                <span className="text-red-400 font-bold text-lg">{u.blood_type}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-white font-semibold">{u.units}</td>
+                                            <td className="px-6 py-4 text-gray-300">{u.collected_date}</td>
+                                            <td className="px-6 py-4 text-gray-300">{u.expiry_date}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/50">
+                                                    Available
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
         </section>
     )
 }

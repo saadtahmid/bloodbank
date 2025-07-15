@@ -59,71 +59,152 @@ const BloodBankUrgentNeeds = ({ bloodbank_id }) => {
     if (!bloodbank_id) return null
 
     return (
-        <section className="bg-black text-white py-4">
-            <h3 className="text-xl font-bold text-red-500 mb-2">Your Open Urgent Needs</h3>
-            {loading ? (
-                <div className="text-gray-400">Loading...</div>
-            ) : urgentNeeds.length === 0 ? (
-                <div className="text-gray-400">No urgent needs at this time.</div>
-            ) : (
-                <ul className="space-y-2">
-                    {urgentNeeds.map(need => (
-                        <li key={need.urgent_need_id} className="border border-red-500 rounded p-3 bg-gray-900">
-                            <div><b>Blood Type:</b> {need.blood_type}</div>
-                            <div><b>Units Needed:</b> {need.units_needed}</div>
-                            <div><b>Posted:</b> {need.posted_date}</div>
-                            <div><b>Notes:</b> {need.notes}</div>
-                            <button
-                                onClick={() => handleFulfillClick(need)}
-                                className="mt-2 bg-red-500 text-white rounded px-4 py-2"
-                            >
-                                Fulfill Urgent Need
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-            {selectedNeed && (
-                <div className="mt-4 p-4 border border-red-500 rounded bg-gray-900">
-                    <h4 className="text-lg font-bold mb-2">Fulfill Urgent Need</h4>
-                    <div className="mb-2"><b>Blood Type:</b> {selectedNeed.blood_type}</div>
-                    <div className="mb-2"><b>Units Needed:</b> {selectedNeed.units_needed}</div>
-                    <div className="mb-2"><b>Posted:</b> {selectedNeed.posted_date}</div>
-                    <div className="mb-2"><b>Notes:</b> {selectedNeed.notes}</div>
-                    <div className="mb-2">
-                        <label className="block text-sm mb-1">Select Donor:</label>
-                        <select
-                            value={selectedDonor}
-                            onChange={e => setSelectedDonor(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-800 border"
-                        >
-                            <option value="">-- Select a donor --</option>
-                            {donors.map(donor => (
-                                <option key={donor.donor_id} value={donor.donor_id}>
-                                    {donor.name} (ID: {donor.donor_id}) | Gender: {donor.gender} | Blood Type: {donor.blood_type} | Weight: {donor.weight}kg | Location: {donor.location} | Contact: {donor.contact_info} | Last Donation: {donor.last_donation_date} | Birth Date: {donor.birth_date}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="mb-2">
-                        <label className="block text-sm mb-1">Units to Donate:</label>
-                        <input
-                            type="number"
-                            min="1"
-                            value={units}
-                            onChange={e => setUnits(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-800 border"
-                        />
-                    </div>
-                    <button
-                        onClick={handleSubmitFulfill}
-                        className="w-full bg-red-500 text-white rounded px-4 py-2"
-                    >
-                        Submit Fulfillment
-                    </button>
-                    {status && <div className="mt-2 text-red-400">{status}</div>}
+        <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 text-white py-12 relative overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute top-20 left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+            <div className="absolute bottom-20 right-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+
+            <div className="relative z-10 max-w-4xl mx-auto px-8">
+                <div className="text-center mb-12 animate-fadeInUp">
+                    <h2 className="text-4xl font-bold gradient-text mb-4 flex items-center justify-center">
+                        <span className="mr-3">🚨</span>
+                        Your Urgent Needs
+                    </h2>
+                    <p className="text-xl text-gray-300 leading-relaxed">
+                        Manage and fulfill urgent blood requirements
+                    </p>
                 </div>
-            )}
+
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
+                        <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
+                        <p className="text-gray-400">Loading urgent needs...</p>
+                    </div>
+                ) : urgentNeeds.length === 0 ? (
+                    <div className="text-center py-20 animate-fadeInUp">
+                        <div className="glass-effect rounded-2xl p-12 max-w-md mx-auto">
+                            <div className="text-6xl mb-4">✅</div>
+                            <h3 className="text-2xl font-bold text-green-400 mb-4">All Clear</h3>
+                            <p className="text-gray-300">No urgent needs at this time.</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid gap-6 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                        {urgentNeeds.map((need, index) => (
+                            <div
+                                key={need.urgent_need_id}
+                                className="glass-effect rounded-2xl p-6 card-hover"
+                                style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center">
+                                        <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse mr-3"></div>
+                                        <h3 className="text-xl font-bold text-red-400">Urgent Need</h3>
+                                    </div>
+                                    <span className="text-xs text-gray-400 bg-gray-900/50 px-3 py-1 rounded-full">
+                                        Posted: {need.posted_date}
+                                    </span>
+                                </div>
+
+                                <div className="grid md:grid-cols-3 gap-4 mb-6">
+                                    <div className="bg-gray-900/50 rounded-xl p-4">
+                                        <label className="text-sm text-gray-400">Blood Type</label>
+                                        <div className="text-red-400 font-bold text-lg">{need.blood_type}</div>
+                                    </div>
+                                    <div className="bg-gray-900/50 rounded-xl p-4">
+                                        <label className="text-sm text-gray-400">Units Needed</label>
+                                        <div className="text-white font-semibold text-lg">{need.units_needed}</div>
+                                    </div>
+                                    <div className="bg-gray-900/50 rounded-xl p-4">
+                                        <label className="text-sm text-gray-400">Status</label>
+                                        <div className="text-yellow-400 font-semibold">OPEN</div>
+                                    </div>
+                                </div>
+
+                                {need.notes && (
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+                                        <label className="text-sm text-red-400 font-semibold">Notes</label>
+                                        <div className="text-gray-200 mt-1">{need.notes}</div>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => handleFulfillClick(need)}
+                                    className="button-modern w-full py-3 rounded-xl font-semibold text-white shadow-xl"
+                                >
+                                    Fulfill Urgent Need
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {selectedNeed && (
+                    <div className="glass-effect rounded-2xl p-8 mt-8 animate-fadeInUp">
+                        <h3 className="text-2xl font-bold text-red-400 mb-6 flex items-center">
+                            <span className="mr-2">⚡</span>
+                            Fulfill Urgent Need
+                        </h3>
+
+                        <div className="grid md:grid-cols-2 gap-4 mb-6">
+                            <div className="bg-gray-900/50 rounded-xl p-4">
+                                <label className="text-sm text-gray-400">Blood Type Required</label>
+                                <div className="text-red-400 font-bold text-lg">{selectedNeed.blood_type}</div>
+                            </div>
+                            <div className="bg-gray-900/50 rounded-xl p-4">
+                                <label className="text-sm text-gray-400">Units Needed</label>
+                                <div className="text-white font-semibold text-lg">{selectedNeed.units_needed}</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-red-400 mb-2">
+                                    Select Donor:
+                                </label>
+                                <select
+                                    value={selectedDonor}
+                                    onChange={e => setSelectedDonor(e.target.value)}
+                                    className="input-modern w-full px-4 py-3 rounded-xl text-white"
+                                >
+                                    <option value="">-- Select a donor --</option>
+                                    {donors.map(donor => (
+                                        <option key={donor.donor_id} value={donor.donor_id} className="bg-gray-800">
+                                            {donor.name} (ID: {donor.donor_id}) | Gender: {donor.gender} | Blood Type: {donor.blood_type} | Weight: {donor.weight}kg | Location: {donor.location} | Contact: {donor.contact_info} | Last Donation: {donor.last_donation_date} | Birth Date: {donor.birth_date}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-red-400 mb-2">
+                                    Units to Donate:
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={units}
+                                    onChange={e => setUnits(e.target.value)}
+                                    className="input-modern w-full px-4 py-3 rounded-xl text-white"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSubmitFulfill}
+                                className="button-modern w-full py-4 rounded-xl font-semibold text-white shadow-xl"
+                            >
+                                Submit Fulfillment
+                            </button>
+                        </div>
+
+                        {status && (
+                            <div className={`mt-4 ${status.includes('✅') ? 'bg-green-500/20 border-green-500/50 text-green-200' : 'bg-red-500/20 border-red-500/50 text-red-200'} border rounded-xl px-4 py-3 backdrop-blur-sm`}>
+                                {status}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </section>
     )
 }

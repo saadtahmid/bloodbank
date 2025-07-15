@@ -148,54 +148,53 @@ export async function registerUserWithRole(email, password, role, details) {
     return { success: true, user_id }
 }
 
-export async function findUserByEmailAndRole(email, password, role) {
-    let result
-    if (role.toLowerCase() === 'hospital') {
-        result = await sql`
-            SELECT u.user_id, u.email, u.password, u.role, h.hospital_id
-            FROM bloodbank.Users u
-            LEFT JOIN bloodbank.Hospital h ON u.user_id = h.user_id
-            WHERE u.email = ${email} AND u.role = ${role}
-            LIMIT 1
-        `
-    }
-    else if (role.toLowerCase() === 'bloodbank') {
-        result = await sql`
-            SELECT u.user_id, u.email, u.password, u.role, b.bloodbank_id
-            FROM bloodbank.Users u
-            LEFT JOIN bloodbank.BloodBank b ON u.user_id = b.user_id
-            WHERE u.email = ${email} AND u.role = ${role}
-            LIMIT 1 `
-    }
-    else if (role.toLowerCase() === 'donor') {
-        result = await sql`
-            SELECT u.user_id, u.email, u.password, u.role, d.donor_id
-            FROM bloodbank.Users u
-            LEFT JOIN bloodbank.Donors d ON u.user_id = d.user_id
-            WHERE u.email = ${email} AND u.role = ${role}
-            LIMIT 1
-        `
-    } else {
-        result = await sql`
-            SELECT user_id, email, password, role
-            FROM bloodbank.Users
-            WHERE email = ${email} AND role = ${role}
-            LIMIT 1
-        `
-    }
-    if (result.length === 0) return null
-    console.log('findUserByEmailAndRole result:', result)
-    const user = result[0]
+export async function findUserByEmail(email, password) {
+    // First, get the user from Users table
+    const userResult = await sql`
+        SELECT user_id, email, password, role
+        FROM bloodbank.Users
+        WHERE email = ${email}
+        LIMIT 1
+    `
+
+    if (userResult.length === 0) return null
+
+    const user = userResult[0]
     console.log('User found:', user)
-    console.log('Verifying password for user:', password)
-    if (verifyPassword(password, user.password)) {
-        // Do not return password hash
-        const { password, ...userWithoutPassword } = user
-        console.log('User authenticated successfully:', userWithoutPassword)
-        return userWithoutPassword
+
+    // Verify password
+    if (!verifyPassword(password, user.password)) {
+        console.log('Invalid password for user:', email)
+        return null
     }
-    console.log('Invalid password for user:', email)
-    return null
+
+    // Now get role-specific data based on user's role
+    let roleSpecificData = {}
+
+    if (user.role.toLowerCase() === 'hospital') {
+        const hospitalResult = await sql`
+            SELECT hospital_id FROM bloodbank.Hospital WHERE user_id = ${user.user_id}
+        `
+        if (hospitalResult[0]) roleSpecificData.hospital_id = hospitalResult[0].hospital_id
+    }
+    else if (user.role.toLowerCase() === 'bloodbank') {
+        const bloodbankResult = await sql`
+            SELECT bloodbank_id FROM bloodbank.BloodBank WHERE user_id = ${user.user_id}
+        `
+        if (bloodbankResult[0]) roleSpecificData.bloodbank_id = bloodbankResult[0].bloodbank_id
+    }
+    else if (user.role.toLowerCase() === 'donor') {
+        const donorResult = await sql`
+            SELECT donor_id FROM bloodbank.Donors WHERE user_id = ${user.user_id}
+        `
+        if (donorResult[0]) roleSpecificData.donor_id = donorResult[0].donor_id
+    }
+
+    // Return user without password hash
+    const { password: _, ...userWithoutPassword } = user
+    console.log('User authenticated successfully:', userWithoutPassword)
+
+    return { ...userWithoutPassword, ...roleSpecificData }
 }
 
 export async function getCampsByDivision(division) {

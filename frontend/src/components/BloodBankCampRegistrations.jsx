@@ -5,9 +5,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const BloodBankCampRegistrations = ({ user }) => {
     const [registrations, setRegistrations] = useState([])
     const [loading, setLoading] = useState(false)
-    const [updateStatus, setUpdateStatus] = useState({}) // { [registration_id]: 'success' | 'error' }
-    const [donationForm, setDonationForm] = useState({}) // { [registration_id]: { blood_type, units } }
-    const [donationStatus, setDonationStatus] = useState({}) // { [registration_id]: 'success' | 'error' | 'submitting' }
+    const [updateStatus, setUpdateStatus] = useState({})
+    const [donationForm, setDonationForm] = useState({})
+    const [donationStatus, setDonationStatus] = useState({})
 
     useEffect(() => {
         if (user && user.bloodbank_id) {
@@ -103,107 +103,180 @@ const BloodBankCampRegistrations = ({ user }) => {
     }
 
     if (!user || user.role.toLowerCase() !== 'bloodbank') {
-        return <div className="text-center text-red-500 mt-10">Only blood banks can view this page.</div>
+        return (
+            <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 flex items-center justify-center">
+                <div className="glass-effect rounded-2xl p-12 text-center animate-fadeInUp max-w-md">
+                    <div className="text-6xl mb-6">🏥</div>
+                    <h2 className="text-2xl font-bold text-red-400 mb-4">Access Restricted</h2>
+                    <p className="text-gray-300 leading-relaxed">
+                        Only blood banks can view camp registrations.
+                    </p>
+                </div>
+            </section>
+        )
     }
 
     return (
-        <section className="bg-black text-white py-8 flex flex-col items-center min-h-screen">
-            <h2 className="text-2xl font-bold text-red-500 mb-4">Camp Registrations</h2>
-            {loading ? (
-                <div className="text-gray-400">Loading...</div>
-            ) : registrations.length === 0 ? (
-                <div className="text-gray-400">No registrations found for your camps.</div>
-            ) : (
-                <table className="min-w-full bg-gray-900 border border-red-500 rounded">
-                    <thead>
-                        <tr>
-                            <th className="px-2 py-1 border-b border-red-500">Donor Name</th>
-                            <th className="px-2 py-1 border-b border-red-500">Blood Type</th>
-                            <th className="px-2 py-1 border-b border-red-500">Gender</th>
-                            <th className="px-2 py-1 border-b border-red-500">Contact</th>
-                            <th className="px-2 py-1 border-b border-red-500">Camp</th>
-                            <th className="px-2 py-1 border-b border-red-500">Date</th>
-                            <th className="px-2 py-1 border-b border-red-500">Attended</th>
-                            <th className="px-2 py-1 border-b border-red-500">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {registrations.map(r => (
-                            <tr key={r.registration_id}>
-                                <td className="px-2 py-1">{r.donor_name}</td>
-                                <td className="px-2 py-1">{r.blood_type}</td>
-                                <td className="px-2 py-1">{r.gender}</td>
-                                <td className="px-2 py-1">{r.contact_info}</td>
-                                <td className="px-2 py-1">{r.camp_name}</td>
-                                <td className="px-2 py-1">{r.registration_date}</td>
-                                <td className="px-2 py-1">{r.attended === 'Y' ? 'Yes' : 'No'}</td>
-                                <td className="px-2 py-1">
-                                    <select
-                                        value={r.attended}
-                                        onChange={e => handleUpdate(r.registration_id, e.target.value)}
-                                        disabled={updateStatus[r.registration_id] === 'updating'}
-                                        className="bg-black border border-red-500 text-white rounded px-2 py-1"
-                                    >
-                                        <option value="N">No</option>
-                                        <option value="Y">Yes</option>
-                                    </select>
-                                    {updateStatus[r.registration_id] === 'success' && (
-                                        <span className="text-green-400 ml-2">Updated</span>
-                                    )}
-                                    {updateStatus[r.registration_id] === 'error' && (
-                                        <span className="text-red-400 ml-2">Error</span>
-                                    )}
-                                    {/* Add Donation Form */}
-                                    <div className="mt-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Blood Type"
-                                            value={donationForm[r.registration_id]?.blood_type ?? r.blood_type ?? ''}
-                                            onChange={e => handleDonationChange(r.registration_id, 'blood_type', e.target.value)}
-                                            className="w-20 mr-2 px-2 py-1 rounded bg-black border border-gray-700 text-white"
-                                            disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
-                                        />
-                                        <input
-                                            type="number"
-                                            placeholder="Units"
-                                            min="1"
-                                            value={donationForm[r.registration_id]?.units || ''}
-                                            onChange={e => handleDonationChange(r.registration_id, 'units', e.target.value)}
-                                            className="w-16 mr-2 px-2 py-1 rounded bg-black border border-gray-700 text-white"
-                                            disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
-                                        />
-                                        <button
-                                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded font-semibold"
-                                            onClick={() => handleAddDonation(r)}
-                                            disabled={
-                                                donationStatus[r.registration_id] === 'submitting' ||
-                                                donationStatus[r.registration_id] === 'success' ||
-                                                r.attended !== 'Y'
-                                            }
-                                            type="button"
+        <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 text-white py-12 relative overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute top-20 left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+            <div className="absolute bottom-20 right-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse-gentle"></div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-8">
+                <div className="text-center mb-12 animate-fadeInUp">
+                    <h2 className="text-4xl font-bold gradient-text mb-4 flex items-center justify-center">
+                        <span className="mr-3">📋</span>
+                        Camp Registrations
+                    </h2>
+                    <p className="text-xl text-gray-300 leading-relaxed">
+                        Manage donor registrations and track donations from your camps
+                    </p>
+                </div>
+
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
+                        <div className="animate-spin w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
+                        <p className="text-gray-400">Loading registrations...</p>
+                    </div>
+                ) : registrations.length === 0 ? (
+                    <div className="text-center py-20 animate-fadeInUp">
+                        <div className="glass-effect rounded-2xl p-12 max-w-md mx-auto">
+                            <div className="text-6xl mb-4">📝</div>
+                            <h3 className="text-2xl font-bold text-red-400 mb-4">No Registrations</h3>
+                            <p className="text-gray-300">No registrations found for your camps.</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="glass-effect rounded-2xl overflow-hidden animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-900/50">
+                                    <tr>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Donor Name</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Blood Type</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Gender</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Contact</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Camp</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Date</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Attended</th>
+                                        <th className="px-4 py-4 text-left text-red-400 font-semibold">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {registrations.map((r, index) => (
+                                        <tr
+                                            key={r.registration_id}
+                                            className="border-t border-gray-700/50 hover:bg-white/5 transition-colors duration-200"
+                                            style={{ animationDelay: `${index * 0.05}s` }}
                                         >
-                                            Add Donation
-                                        </button>
-                                        {donationStatus[r.registration_id] === 'success' && (
-                                            <span className="text-green-400 ml-2">Added!</span>
-                                        )}
-                                        {donationStatus[r.registration_id] === 'error' && (
-                                            <span className="text-red-400 ml-2">
-                                                {r.attended !== 'Y'
-                                                    ? 'Mark as attended before adding donation.'
-                                                    : 'Error'}
-                                            </span>
-                                        )}
-                                        {donationStatus[r.registration_id] === 'already' && (
-                                            <span className="text-yellow-400 ml-2">Donation already added.</span>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                                            <td className="px-4 py-4 text-white font-semibold">{r.donor_name}</td>
+                                            <td className="px-4 py-4">
+                                                <span className="text-red-400 font-bold">{r.blood_type}</span>
+                                            </td>
+                                            <td className="px-4 py-4 text-gray-300">{r.gender}</td>
+                                            <td className="px-4 py-4 text-gray-300">{r.contact_info}</td>
+                                            <td className="px-4 py-4 text-white">{r.camp_name}</td>
+                                            <td className="px-4 py-4 text-gray-300">{r.registration_date}</td>
+                                            <td className="px-4 py-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${r.attended === 'Y'
+                                                        ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                                                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                                                    }`}>
+                                                    {r.attended === 'Y' ? 'Yes' : 'No'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="space-y-3">
+                                                    {/* Attendance Update */}
+                                                    <div className="flex items-center gap-2">
+                                                        <select
+                                                            value={r.attended}
+                                                            onChange={e => handleUpdate(r.registration_id, e.target.value)}
+                                                            disabled={updateStatus[r.registration_id] === 'updating'}
+                                                            className="input-modern px-3 py-2 rounded-lg text-white text-sm"
+                                                        >
+                                                            <option value="N">No</option>
+                                                            <option value="Y">Yes</option>
+                                                        </select>
+                                                        {updateStatus[r.registration_id] === 'success' && (
+                                                            <span className="text-green-400 text-sm">✓</span>
+                                                        )}
+                                                        {updateStatus[r.registration_id] === 'error' && (
+                                                            <span className="text-red-400 text-sm">✗</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Donation Form */}
+                                                    <div className="bg-gray-900/30 rounded-lg p-3 space-y-2">
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Blood Type"
+                                                                value={donationForm[r.registration_id]?.blood_type ?? r.blood_type ?? ''}
+                                                                onChange={e => handleDonationChange(r.registration_id, 'blood_type', e.target.value)}
+                                                                className="input-modern px-2 py-1 rounded text-white text-sm w-20"
+                                                                disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                placeholder="Units"
+                                                                min="1"
+                                                                value={donationForm[r.registration_id]?.units || ''}
+                                                                onChange={e => handleDonationChange(r.registration_id, 'units', e.target.value)}
+                                                                className="input-modern px-2 py-1 rounded text-white text-sm w-16"
+                                                                disabled={donationStatus[r.registration_id] === 'success' || r.attended !== 'Y'}
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            className="button-modern w-full py-2 rounded-lg font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            onClick={() => handleAddDonation(r)}
+                                                            disabled={
+                                                                donationStatus[r.registration_id] === 'submitting' ||
+                                                                donationStatus[r.registration_id] === 'success' ||
+                                                                r.attended !== 'Y'
+                                                            }
+                                                            type="button"
+                                                        >
+                                                            {donationStatus[r.registration_id] === 'submitting' ? (
+                                                                <span className="flex items-center justify-center">
+                                                                    <div className="animate-spin w-3 h-3 border border-white border-t-transparent rounded-full mr-2"></div>
+                                                                    Adding...
+                                                                </span>
+                                                            ) : (
+                                                                'Add Donation'
+                                                            )}
+                                                        </button>
+                                                        {donationStatus[r.registration_id] === 'success' && (
+                                                            <span className="text-green-400 text-sm flex items-center">
+                                                                <span className="mr-1">✅</span>
+                                                                Added!
+                                                            </span>
+                                                        )}
+                                                        {donationStatus[r.registration_id] === 'error' && (
+                                                            <span className="text-red-400 text-sm flex items-center">
+                                                                <span className="mr-1">❌</span>
+                                                                {r.attended !== 'Y'
+                                                                    ? 'Mark as attended first'
+                                                                    : 'Error adding donation'}
+                                                            </span>
+                                                        )}
+                                                        {donationStatus[r.registration_id] === 'already' && (
+                                                            <span className="text-yellow-400 text-sm flex items-center">
+                                                                <span className="mr-1">⚠️</span>
+                                                                Already added
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
         </section>
     )
 }

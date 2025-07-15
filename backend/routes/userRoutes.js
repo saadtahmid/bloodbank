@@ -4,7 +4,7 @@ import {
     getAllDonors,
     getAllBloodBanks,
     getAllHospitals,
-    findUserByEmailAndRole,
+    findUserByEmail,
     getCampsByDivision,
     registerUserWithRole,
     registerDonorForCamp,
@@ -65,12 +65,12 @@ router.get('/hospitals', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
-    const { email, password, role } = req.body
-    if (!email || !password || !role) {
-        return res.status(400).json({ error: 'Email, password, and role are required' })
+    const { email, password } = req.body // Remove role from destructuring
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' })
     }
     try {
-        const user = await findUserByEmailAndRole(email, password, role)
+        const user = await findUserByEmail(email, password) // Use new function
         if (user) {
             res.json({ success: true, user })
         } else {
