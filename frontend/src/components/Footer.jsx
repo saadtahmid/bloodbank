@@ -67,7 +67,7 @@ const Footer = () => (
             <div className="border-t border-gray-700/50 pt-8 mt-8">
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     <p className="text-gray-400 mb-4 md:mb-0">
-                        © 2024 Blood Donation Management System. Saving lives through technology.
+                        © 2025 Blood Donation Management System. Saving lives through technology.
                     </p>
                     <div className="flex space-x-6">
                         <button className="text-gray-400 hover:text-red-400 transition-colors duration-200 hover:scale-110 transform">
