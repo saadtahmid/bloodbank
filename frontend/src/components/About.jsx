@@ -1,4 +1,4 @@
-import React from 'react'  
+import React from 'react'
 
 const About = () => {
     const bloodCompatibility = [
@@ -38,7 +38,7 @@ const About = () => {
     ]
 
     return (
-        <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 text-white py-12 relative overflow-hidden">
+        <section id="about" className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 text-white py-12 relative overflow-hidden">
             {/* Background effects */}
             <div className="absolute top-20 left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
             <div className="absolute bottom-20 right-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse-gentle"></div>

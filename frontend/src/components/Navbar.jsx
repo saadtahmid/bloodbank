@@ -49,13 +49,14 @@ const Navbar = ({ user, setUser }) => {
 
         // Wait for the component to render, then scroll to it
         setTimeout(() => {
-            // For home page sections, scroll within the page
             if (hash === '#home') {
                 window.scrollTo({ top: 0, behavior: 'smooth' })
             } else if (hash === '#about') {
-                const aboutElement = document.querySelector('#about') || document.querySelector('[data-section="about"]')
+                const aboutElement = document.querySelector('#about')
                 if (aboutElement) {
                     aboutElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
             } else {
                 // For other components, scroll to the main content area
@@ -101,9 +102,12 @@ const Navbar = ({ user, setUser }) => {
                     onMouseEnter={() => setShowLookingDropdown(true)}
                     onMouseLeave={() => setShowLookingDropdown(false)}
                 >
-                    <a href="#looking-for-blood" className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg">
+                    <span className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg cursor-pointer flex items-center">
                         Looking for Blood
-                    </a>
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
                     {showLookingDropdown && (
                         <ul className="absolute left-0 glass-effect rounded-lg shadow-2xl min-w-[200px] mt-2 animate-fadeInUp">
                             <li>
@@ -132,9 +136,12 @@ const Navbar = ({ user, setUser }) => {
                     onMouseEnter={() => setShowDonateDropdown(true)}
                     onMouseLeave={() => setShowDonateDropdown(false)}
                 >
-                    <a href="#donate-blood" className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg">
+                    <span className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg cursor-pointer flex items-center">
                         Donate Blood
-                    </a>
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
                     {showDonateDropdown && (
                         <ul className="absolute left-0 glass-effect rounded-lg shadow-2xl min-w-[180px] mt-2 animate-fadeInUp">
                             <li>
