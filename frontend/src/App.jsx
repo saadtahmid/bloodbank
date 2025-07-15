@@ -25,7 +25,7 @@ function App() {
   const [showBloodInventory, setShowBloodInventory] = useState(false)
   const [showAddDonation, setShowAddDonation] = useState(false)
   const [showUrgentNeeds, setShowUrgentNeeds] = useState(false)
-  const [user, setUser] = useState(null) // Store logged-in user
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -44,11 +44,20 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  // Pass setUser to Login so it can set user on successful login
+  // Check if we're on the home page (no hash or #home or #about)
+  const isHomePage =
+    !window.location.hash ||
+    window.location.hash === '#home' ||
+    window.location.hash === '#about' ||
+    window.location.hash === ''
+
   return (
     <div className="homepage-container min-h-screen flex flex-col bg-black">
       <Navbar user={user} setUser={setUser} />
-      <Header />
+
+      {/* Only show Header on home page */}
+      {isHomePage && <Header />}
+
       <main className="flex-1 flex flex-col">
         {showLogin ? (
           <Login setUser={setUser} />

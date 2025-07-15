@@ -38,16 +38,61 @@ const Navbar = ({ user, setUser }) => {
         }
     }, [showNotifications])
 
+    const handleNavClick = (hash) => {
+        // Close any open dropdowns
+        setShowNotifications(false)
+        setShowLookingDropdown(false)
+        setShowDonateDropdown(false)
+
+        // Navigate to the hash
+        window.location.hash = hash
+
+        // Wait for the component to render, then scroll to it
+        setTimeout(() => {
+            // For home page sections, scroll within the page
+            if (hash === '#home') {
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+            } else if (hash === '#about') {
+                const aboutElement = document.querySelector('#about') || document.querySelector('[data-section="about"]')
+                if (aboutElement) {
+                    aboutElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+            } else {
+                // For other components, scroll to the main content area
+                const mainElement = document.querySelector('main') || document.querySelector('.main-content')
+                if (mainElement) {
+                    mainElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                } else {
+                    // Fallback: scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                }
+            }
+        }, 150)
+    }
+
+    const handleLoginClick = (e) => {
+        e.preventDefault()
+        handleNavClick('#login')
+    }
+
     return (
         <nav className="glass-effect sticky top-0 z-50 shadow-2xl">
             <ul className="flex justify-center gap-8 py-4 relative">
                 <li className="transform transition-all duration-200 hover:scale-110">
-                    <a href="#home" className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg">
+                    <a
+                        href="#home"
+                        className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg"
+                        onClick={() => handleNavClick('#home')}
+                    >
                         Home
                     </a>
                 </li>
                 <li className="transform transition-all duration-200 hover:scale-110">
-                    <a href="#about" className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg">
+                    <a
+                        href="#about"
+                        className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg"
+                        onClick={() => handleNavClick('#about')}
+                    >
                         About
                     </a>
                 </li>
@@ -65,6 +110,7 @@ const Navbar = ({ user, setUser }) => {
                                 <a
                                     href="#blood-bank-directory"
                                     className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-t-lg"
+                                    onClick={() => handleNavClick('#blood-bank-directory')}
                                 >
                                     Blood Bank Directory
                                 </a>
@@ -73,6 +119,7 @@ const Navbar = ({ user, setUser }) => {
                                 <a
                                     href="#request-blood"
                                     className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-b-lg"
+                                    onClick={() => handleNavClick('#request-blood')}
                                 >
                                     Request Blood
                                 </a>
@@ -94,6 +141,7 @@ const Navbar = ({ user, setUser }) => {
                                 <a
                                     href="#view-camps"
                                     className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                    onClick={() => handleNavClick('#view-camps')}
                                 >
                                     View Camps
                                 </a>
@@ -104,27 +152,47 @@ const Navbar = ({ user, setUser }) => {
                 {user && user.role && user.role.toLowerCase() === 'bloodbank' && (
                     <>
                         <li className="transform transition-all duration-200 hover:scale-110">
-                            <a href="#camp-registrations" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                            <a
+                                href="#camp-registrations"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#camp-registrations')}
+                            >
                                 Camp Registrations
                             </a>
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
-                            <a href="#blood-requests" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                            <a
+                                href="#blood-requests"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#blood-requests')}
+                            >
                                 Blood Requests
                             </a>
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
-                            <a href="#blood-inventory" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                            <a
+                                href="#blood-inventory"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#blood-inventory')}
+                            >
                                 Blood Inventory
                             </a>
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
-                            <a href="#add-donation" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                            <a
+                                href="#add-donation"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#add-donation')}
+                            >
                                 Add Donation
                             </a>
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
-                            <a href="#urgent-needs" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                            <a
+                                href="#urgent-needs"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#urgent-needs')}
+                            >
                                 Urgent Needs
                             </a>
                         </li>
@@ -132,7 +200,11 @@ const Navbar = ({ user, setUser }) => {
                 )}
                 {user && user.role && user.role.toLowerCase() === 'donor' && (
                     <li className="transform transition-all duration-200 hover:scale-110">
-                        <a href="#urgent-needs" className="text-white hover:text-red-400 font-semibold transition-all duration-300">
+                        <a
+                            href="#urgent-needs"
+                            className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                            onClick={() => handleNavClick('#urgent-needs')}
+                        >
                             Urgent Needs
                         </a>
                     </li>
@@ -143,7 +215,7 @@ const Navbar = ({ user, setUser }) => {
                             onClick={() => {
                                 if (window.confirm('Are you sure you want to logout?')) {
                                     setUser(null)
-                                    window.location.hash = '#home'
+                                    handleNavClick('#home')
                                 }
                             }}
                             className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg"
@@ -151,12 +223,12 @@ const Navbar = ({ user, setUser }) => {
                             Logout{user.role ? ` (${user.role})` : ''}
                         </button>
                     ) : (
-                        <a
-                            href="#login"
-                            className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg inline-block"
+                        <button
+                            onClick={handleLoginClick}
+                            className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg"
                         >
                             Login
-                        </a>
+                        </button>
                     )}
                 </li>
                 <li className="relative">
