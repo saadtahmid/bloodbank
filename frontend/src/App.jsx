@@ -25,30 +25,71 @@ function App() {
   const [showBloodInventory, setShowBloodInventory] = useState(false)
   const [showAddDonation, setShowAddDonation] = useState(false)
   const [showUrgentNeeds, setShowUrgentNeeds] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
   const [user, setUser] = useState(null)
 
   useEffect(() => {
     const handleHashChange = () => {
-      setShowDirectory(window.location.hash === '#blood-bank-directory')
-      setShowLogin(window.location.hash === '#login')
-      setShowRequestBlood(window.location.hash === '#request-blood')
-      setShowViewCamps(window.location.hash === '#view-camps')
-      setShowCampRegistrations(window.location.hash === '#camp-registrations')
-      setShowBloodRequests(window.location.hash === '#blood-requests')
-      setShowBloodInventory(window.location.hash === '#blood-inventory')
-      setShowAddDonation(window.location.hash === '#add-donation')
-      setShowUrgentNeeds(window.location.hash === '#urgent-needs')
+      const hash = window.location.hash
+
+      // Reset all states
+      setShowDirectory(false)
+      setShowLogin(false)
+      setShowRequestBlood(false)
+      setShowViewCamps(false)
+      setShowCampRegistrations(false)
+      setShowBloodRequests(false)
+      setShowBloodInventory(false)
+      setShowAddDonation(false)
+      setShowUrgentNeeds(false)
+      setShowAbout(false)
+
+      // Set the appropriate state based on hash
+      switch (hash) {
+        case '#blood-bank-directory':
+          setShowDirectory(true)
+          break
+        case '#login':
+          setShowLogin(true)
+          break
+        case '#request-blood':
+          setShowRequestBlood(true)
+          break
+        case '#view-camps':
+          setShowViewCamps(true)
+          break
+        case '#camp-registrations':
+          setShowCampRegistrations(true)
+          break
+        case '#blood-requests':
+          setShowBloodRequests(true)
+          break
+        case '#blood-inventory':
+          setShowBloodInventory(true)
+          break
+        case '#add-donation':
+          setShowAddDonation(true)
+          break
+        case '#urgent-needs':
+          setShowUrgentNeeds(true)
+          break
+        case '#about':
+          setShowAbout(true)
+          break
+        default:
+          // Home page (no hash, #home, or empty)
+          break
+      }
     }
+
     window.addEventListener('hashchange', handleHashChange)
-    handleHashChange()
+    handleHashChange() // Run on initial load
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  // Check if we're on the home page (no hash or #home or #about)
-  const isHomePage =
-    !window.location.hash ||
+  // Check if we're on the home page (no hash, #home, or empty)
+  const isHomePage = !window.location.hash ||
     window.location.hash === '#home' ||
-    window.location.hash === '#about' ||
     window.location.hash === ''
 
   return (
@@ -81,6 +122,8 @@ function App() {
           ) : user && user.role && user.role.toLowerCase() === 'bloodbank' ? (
             <BloodBankUrgentNeeds bloodbank_id={user.bloodbank_id} />
           ) : null
+        ) : showAbout ? (
+          <About />
         ) : (
           <>
             <Intro />
@@ -88,7 +131,9 @@ function App() {
           </>
         )}
       </main>
+
       <Footer />
+
     </div>
   )
 }
