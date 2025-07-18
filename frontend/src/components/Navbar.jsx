@@ -218,17 +218,30 @@ const Navbar = ({ user, setUser }) => {
                 )}
                 <li className="ml-4">
                     {user ? (
-                        <button
-                            onClick={() => {
-                                if (window.confirm('Are you sure you want to logout?')) {
-                                    setUser(null)
-                                    handleNavClick('#home')
-                                }
-                            }}
-                            className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg"
-                        >
-                            Logout{user.role ? ` (${user.role})` : ''}
-                        </button>
+                        <div className="flex items-center gap-4">
+                            {/* Profile Link */}
+                            <a
+                                href="#profile"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg flex items-center"
+                                onClick={() => handleNavClick('#profile')}
+                            >
+                                <span className="mr-1">👤</span>
+                                Profile
+                            </a>
+
+                            {/* Logout Button */}
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('Are you sure you want to logout?')) {
+                                        setUser(null)
+                                        handleNavClick('#home')
+                                    }
+                                }}
+                                className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg"
+                            >
+                                Logout{user.role ? ` (${user.role})` : ''}
+                            </button>
+                        </div>
                     ) : (
                         <button
                             onClick={handleLoginClick}

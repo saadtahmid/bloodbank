@@ -2,8 +2,8 @@ import Navbar from './components/Navbar'
 import Header from './components/Header'
 import Intro from './components/Intro'
 import Features from './components/Features'
-import Footer from './components/Footer'
 import About from './components/About'
+import Footer from './components/Footer'
 import BloodBankDirectory from './components/BloodBankDirectory'
 import Login from './components/Login'
 import RequestBlood from './components/RequestBlood'
@@ -14,6 +14,7 @@ import BloodInventory from './components/BloodInventory'
 import AddDirectDonation from './components/AddDirectDonation'
 import DonorUrgentNeeds from './components/DonorUrgentNeeds'
 import BloodBankUrgentNeeds from './components/BloodBankUrgentNeeds'
+import Profile from './components/Profile'
 import { useEffect, useState } from 'react'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
   const [showBloodInventory, setShowBloodInventory] = useState(false)
   const [showAddDonation, setShowAddDonation] = useState(false)
   const [showUrgentNeeds, setShowUrgentNeeds] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [user, setUser] = useState(null)
 
@@ -43,6 +45,7 @@ function App() {
       setShowBloodInventory(false)
       setShowAddDonation(false)
       setShowUrgentNeeds(false)
+      setShowProfile(false)
       setShowAbout(false)
 
       // Set the appropriate state based on hash
@@ -74,11 +77,14 @@ function App() {
         case '#urgent-needs':
           setShowUrgentNeeds(true)
           break
+        case '#profile':
+          setShowProfile(true)
+          break
         case '#about':
           setShowAbout(true)
           break
         default:
-          // Home page (no hash, #home, or empty)
+          // Home page (includes #home and empty)
           break
       }
     }
@@ -123,6 +129,8 @@ function App() {
           ) : user && user.role && user.role.toLowerCase() === 'bloodbank' ? (
             <BloodBankUrgentNeeds bloodbank_id={user.bloodbank_id} />
           ) : null
+        ) : showProfile ? (
+          <Profile user={user} />
         ) : showAbout ? (
           <About />
         ) : (

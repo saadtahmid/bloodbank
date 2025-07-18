@@ -485,6 +485,59 @@ export async function markNotificationAsSeen(notification_id) {
     return true
 }
 
+export async function getHospitalById(hospital_id) {
+    const result = await sql`
+        SELECT * FROM bloodbank.Hospital WHERE hospital_id = ${hospital_id}
+    `
+    return result[0] || null
+}
+
+export async function getBloodBankById(bloodbank_id) {
+    const result = await sql`
+        SELECT * FROM bloodbank.BloodBank WHERE bloodbank_id = ${bloodbank_id}
+    `
+    return result[0] || null
+}
+
+export async function updateDonorProfile(donor_id, { location, weight, contact_info }) {
+    try {
+        await sql`
+            UPDATE bloodbank.Donors 
+            SET location = ${location}, weight = ${weight}, contact_info = ${contact_info}
+            WHERE donor_id = ${donor_id}
+        `
+        return { success: true }
+    } catch (err) {
+        return { success: false, error: 'Failed to update donor profile' }
+    }
+}
+
+export async function updateHospitalProfile(hospital_id, { location, contact_info }) {
+    try {
+        await sql`
+            UPDATE bloodbank.Hospital 
+            SET location = ${location}, contact_info = ${contact_info}
+            WHERE hospital_id = ${hospital_id}
+        `
+        return { success: true }
+    } catch (err) {
+        return { success: false, error: 'Failed to update hospital profile' }
+    }
+}
+
+export async function updateBloodBankProfile(bloodbank_id, { location, contact_number }) {
+    try {
+        await sql`
+            UPDATE bloodbank.BloodBank 
+            SET location = ${location}, contact_number = ${contact_number}
+            WHERE bloodbank_id = ${bloodbank_id}
+        `
+        return { success: true }
+    } catch (err) {
+        return { success: false, error: 'Failed to update blood bank profile' }
+    }
+}
+
 
 
 

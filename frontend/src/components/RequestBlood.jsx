@@ -4,10 +4,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const RequestBlood = ({ user }) => {
     const [bloodbanks, setBloodbanks] = useState([])
+    const [selectedBloodbanks, setSelectedBloodbanks] = useState([])
     const [form, setForm] = useState({
         blood_type: '',
-        units_requested: '',
-        requested_to: ''
+        units_requested: ''
     })
     const [status, setStatus] = useState('')
     const [loading, setLoading] = useState(false)
@@ -54,30 +54,63 @@ const RequestBlood = ({ user }) => {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
+    const handleBloodBankSelection = (bloodbankId) => {
+        setSelectedBloodbanks(prev => {
+            if (prev.includes(bloodbankId)) {
+                return prev.filter(id => id !== bloodbankId)
+            } else {
+                return [...prev, bloodbankId]
+            }
+        })
+    }
+
+    const selectAllBloodBanks = () => {
+        if (selectedBloodbanks.length === bloodbanks.length) {
+            setSelectedBloodbanks([])
+        } else {
+            setSelectedBloodbanks(bloodbanks.map(b => b.bloodbank_id))
+        }
+    }
+
     const handleSubmit = async e => {
         e.preventDefault()
+
+        if (selectedBloodbanks.length === 0) {
+            setStatus('❌ Please select at least one blood bank')
+            return
+        }
+
         setStatus('')
         setLoading(true)
+
         try {
-            const res = await fetch(`${API_BASE_URL}/api/blood-requests`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    hospital_id: user.hospital_id,
-                    blood_type: form.blood_type,
-                    units_requested: Number(form.units_requested),
-                    requested_to: Number(form.requested_to)
-                })
-            })
-            const data = await res.json()
-            if (res.ok && data.success) {
-                setStatus('✅ Request submitted successfully!')
-                setForm({ blood_type: '', units_requested: '', requested_to: '' })
+            // Send requests to all selected blood banks
+            const promises = selectedBloodbanks.map(bloodbank_id =>
+                fetch(`${API_BASE_URL}/api/blood-requests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        hospital_id: user.hospital_id,
+                        blood_type: form.blood_type,
+                        units_requested: Number(form.units_requested),
+                        requested_to: Number(bloodbank_id)
+                    })
+                }).then(res => res.json())
+            )
+
+            const results = await Promise.all(promises)
+            const successful = results.filter(result => result.success).length
+            const failed = results.length - successful
+
+            if (successful > 0) {
+                setStatus(`✅ Successfully sent ${successful} request(s) to blood bank(s)${failed > 0 ? `. ${failed} request(s) failed.` : '!'}`)
+                setForm({ blood_type: '', units_requested: '' })
+                setSelectedBloodbanks([])
             } else {
-                setStatus(data.error || 'Failed to submit request')
+                setStatus('❌ All requests failed. Please try again.')
             }
         } catch {
-            setStatus('Network error')
+            setStatus('❌ Network error. Please try again.')
         }
         setLoading(false)
     }
@@ -88,22 +121,22 @@ const RequestBlood = ({ user }) => {
             <div className="absolute top-20 left-20 w-64 h-64 bg-red-500/10 rounded-full blur-3xl animate-pulse-gentle"></div>
             <div className="absolute bottom-20 right-20 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse-gentle"></div>
 
-            <div className="relative z-10 max-w-2xl mx-auto px-8">
+            <div className="relative z-10 max-w-4xl mx-auto px-8">
                 <div className="text-center mb-12 animate-fadeInUp">
                     <h2 className="text-4xl font-bold gradient-text mb-4 flex items-center justify-center">
                         <span className="mr-3">🩸</span>
                         Request Blood Units
                     </h2>
                     <p className="text-xl text-gray-300 leading-relaxed">
-                        Submit your blood requirement request to nearby blood banks
+                        Submit your blood requirement request to multiple blood banks
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="glass-effect rounded-2xl p-8 space-y-6 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
-                    <div className="space-y-4">
+                <form onSubmit={handleSubmit} className="glass-effect rounded-2xl p-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-semibold text-red-400 mb-2">
-                                Blood Type Required *
+                                Blood Type *
                             </label>
                             <select
                                 className="input-modern w-full px-4 py-3 rounded-xl text-white"
@@ -113,9 +146,14 @@ const RequestBlood = ({ user }) => {
                                 required
                             >
                                 <option value="">Select Blood Type</option>
-                                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bt => (
-                                    <option key={bt} value={bt} className="bg-gray-800">{bt}</option>
-                                ))}
+                                <option value="A+" className="bg-gray-800">A+</option>
+                                <option value="A-" className="bg-gray-800">A-</option>
+                                <option value="B+" className="bg-gray-800">B+</option>
+                                <option value="B-" className="bg-gray-800">B-</option>
+                                <option value="AB+" className="bg-gray-800">AB+</option>
+                                <option value="AB-" className="bg-gray-800">AB-</option>
+                                <option value="O+" className="bg-gray-800">O+</option>
+                                <option value="O-" className="bg-gray-800">O-</option>
                             </select>
                         </div>
 
@@ -134,52 +172,108 @@ const RequestBlood = ({ user }) => {
                                 required
                             />
                         </div>
+                    </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-red-400 mb-2">
-                                Blood Bank *
+                    {/* Blood Banks Selection */}
+                    <div className="mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <label className="block text-sm font-semibold text-red-400">
+                                Select Blood Banks *
                             </label>
-                            <select
-                                className="input-modern w-full px-4 py-3 rounded-xl text-white"
-                                name="requested_to"
-                                value={form.requested_to}
-                                onChange={handleChange}
-                                required
+                            <button
+                                type="button"
+                                onClick={selectAllBloodBanks}
+                                className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
                             >
-                                <option value="">Select Blood Bank</option>
-                                {bloodbanks.map(b => (
-                                    <option key={b.bloodbank_id} value={b.bloodbank_id} className="bg-gray-800">{b.name}</option>
-                                ))}
-                            </select>
+                                {selectedBloodbanks.length === bloodbanks.length ? 'Deselect All' : 'Select All'}
+                            </button>
                         </div>
+
+                        <div className="bg-gray-900/30 rounded-xl p-4 max-h-60 overflow-y-auto">
+                            {bloodbanks.length === 0 ? (
+                                <p className="text-gray-400 text-center py-4">Loading blood banks...</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {bloodbanks.map(bloodbank => (
+                                        <label
+                                            key={bloodbank.bloodbank_id}
+                                            className="flex items-center p-3 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 cursor-pointer"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedBloodbanks.includes(bloodbank.bloodbank_id)}
+                                                onChange={() => handleBloodBankSelection(bloodbank.bloodbank_id)}
+                                                className="w-4 h-4 text-red-500 bg-gray-700 border-gray-600 rounded focus:ring-red-500 focus:ring-2 mr-3"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="text-white font-semibold">{bloodbank.name}</div>
+                                                <div className="text-gray-400 text-sm">{bloodbank.location}</div>
+                                                {bloodbank.contact_number && (
+                                                    <div className="text-gray-500 text-xs">📞 {bloodbank.contact_number}</div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {selectedBloodbanks.length > 0 && (
+                            <div className="mt-3 text-sm text-gray-400">
+                                Selected: {selectedBloodbanks.length} blood bank(s)
+                            </div>
+                        )}
                     </div>
 
                     {status && (
-                        <div className={`${status.includes('Error') || status.includes('Failed') || status.includes('Network error') ? 'bg-red-500/20 border-red-500/50 text-red-200' : 'bg-green-500/20 border-green-500/50 text-green-200'} border rounded-xl px-4 py-3 backdrop-blur-sm`}>
+                        <div className={`p-4 rounded-xl mb-6 text-center font-semibold ${status.includes('✅')
+                                ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                                : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                            }`}>
                             {status}
                         </div>
                     )}
 
                     <button
-                        className="button-modern w-full py-4 rounded-xl font-semibold text-white shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || selectedBloodbanks.length === 0}
+                        className="button-modern w-full py-4 rounded-xl font-semibold text-white shadow-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 transition-all duration-200"
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
-                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
-                                Submitting Request...
+                                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                                Sending Requests...
                             </span>
                         ) : (
-                            'Submit Blood Request'
+                            `Send Request${selectedBloodbanks.length > 1 ? 's' : ''} to ${selectedBloodbanks.length || 0} Blood Bank${selectedBloodbanks.length !== 1 ? 's' : ''}`
                         )}
                     </button>
+
+                    <div className="mt-6 text-center">
+                        <p className="text-gray-400 text-sm">
+                            💡 Tip: Select multiple blood banks to increase your chances of finding the required blood units
+                        </p>
+                    </div>
                 </form>
 
-                <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
-                    <div className="glass-effect rounded-2xl p-6">
-                        <h3 className="text-lg font-bold text-red-400 mb-3">Emergency Contact</h3>
-                        <p className="text-gray-300">For urgent requests, call: <span className="text-white font-semibold">999</span></p>
+                {/* Information Cards */}
+                <div className="grid md:grid-cols-3 gap-6 mt-8">
+                    <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
+                        <div className="text-3xl mb-3">⚡</div>
+                        <h3 className="text-lg font-bold text-red-400 mb-2">Fast Response</h3>
+                        <p className="text-gray-300 text-sm">Get responses from blood banks within 24 hours</p>
+                    </div>
+
+                    <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
+                        <div className="text-3xl mb-3">🏥</div>
+                        <h3 className="text-lg font-bold text-red-400 mb-2">Multiple Requests</h3>
+                        <p className="text-gray-300 text-sm">Send requests to multiple blood banks simultaneously</p>
+                    </div>
+
+                    <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.6s' }}>
+                        <div className="text-3xl mb-3">📋</div>
+                        <h3 className="text-lg font-bold text-red-400 mb-2">Track Status</h3>
+                        <p className="text-gray-300 text-sm">Monitor your request status in real-time</p>
                     </div>
                 </div>
             </div>

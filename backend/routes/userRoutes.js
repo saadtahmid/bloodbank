@@ -23,7 +23,12 @@ import {
     getDonorsByBloodType,
     fulfillUrgentNeed,
     getLatestUnseenNotifications,
-    markNotificationAsSeen
+    markNotificationAsSeen,
+    getHospitalById,
+    getBloodBankById,
+    updateDonorProfile,
+    updateHospitalProfile,
+    updateBloodBankProfile
 } from '../services/userService.js'
 
 const router = Router()
@@ -257,7 +262,7 @@ router.post('/blood-requests/fulfill/:request_id', async (req, res) => {
     }
 })
 
-// Get donor info by donor_id
+// Get profile data for different user types
 router.get('/donors/:donor_id', async (req, res) => {
     const { donor_id } = req.params
     if (!donor_id) return res.status(400).json({ error: 'donor_id is required' })
@@ -270,21 +275,73 @@ router.get('/donors/:donor_id', async (req, res) => {
     }
 })
 
-// Add direct donation (no camp)
-router.post('/donations/direct', async (req, res) => {
-    const { donor_id, bloodbank_id, blood_type, units } = req.body
-    if (!donor_id || !bloodbank_id || !blood_type || !units) {
-        return res.status(400).json({ error: 'All fields are required' })
-    }
+router.get('/hospitals/:hospital_id', async (req, res) => {
+    const { hospital_id } = req.params
+    if (!hospital_id) return res.status(400).json({ error: 'hospital_id is required' })
     try {
-        const result = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units })
+        const hospital = await getHospitalById(hospital_id)
+        if (hospital) res.json(hospital)
+        else res.status(404).json({ error: 'Hospital not found' })
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch hospital' })
+    }
+})
+
+router.get('/bloodbanks/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+    if (!bloodbank_id) return res.status(400).json({ error: 'bloodbank_id is required' })
+    try {
+        const bloodbank = await getBloodBankById(bloodbank_id)
+        if (bloodbank) res.json(bloodbank)
+        else res.status(404).json({ error: 'Blood bank not found' })
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch blood bank' })
+    }
+})
+
+// Update profile data
+router.put('/donors/:donor_id', async (req, res) => {
+    const { donor_id } = req.params
+    const { location, weight, contact_info } = req.body
+    try {
+        const result = await updateDonorProfile(donor_id, { location, weight, contact_info })
         if (result.success) {
-            res.json({ success: true, donation_id: result.donation_id })
+            res.json({ success: true })
         } else {
             res.status(400).json({ success: false, error: result.error })
         }
     } catch (err) {
-        res.status(500).json({ error: 'Failed to add donation' })
+        res.status(500).json({ error: 'Failed to update donor profile' })
+    }
+})
+
+router.put('/hospitals/:hospital_id', async (req, res) => {
+    const { hospital_id } = req.params
+    const { location, contact_info } = req.body
+    try {
+        const result = await updateHospitalProfile(hospital_id, { location, contact_info })
+        if (result.success) {
+            res.json({ success: true })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update hospital profile' })
+    }
+})
+
+router.put('/bloodbanks/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+    const { location, contact_number } = req.body
+    try {
+        const result = await updateBloodBankProfile(bloodbank_id, { location, contact_number })
+        if (result.success) {
+            res.json({ success: true })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update blood bank profile' })
     }
 })
 
