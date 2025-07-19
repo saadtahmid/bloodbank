@@ -500,6 +500,34 @@ export async function getDonationHistoryForDonor(donor_id) {
     }
 }
 
+export async function getBloodRequestHistoryForHospital(hospital_id) {
+    try {
+        const result = await sql`
+            SELECT 
+                r.request_id,
+                r.blood_type,
+                r.units_requested,
+                r.status,
+                r.request_date,
+                bb.name as bloodbank_name,
+                bb.location as bloodbank_location,
+                bb.contact_number as bloodbank_phone
+            FROM bloodbank.BloodRequest r
+            LEFT JOIN bloodbank.BloodBank bb ON r.requested_to = bb.bloodbank_id
+            WHERE r.hospital_id = ${hospital_id}
+            ORDER BY r.request_date DESC
+        `
+        
+        return result.map(r => ({
+            ...r,
+            request_date: r.request_date ? r.request_date.toISOString().slice(0, 10) : null,
+        }))
+    } catch (err) {
+        console.error('Get blood request history error:', err)
+        return []
+    }
+}
+
 // Get urgent needs for a donor (by blood type)
 export async function getUrgentNeedsForDonor(donor_id) {
     try {

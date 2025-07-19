@@ -16,6 +16,7 @@ import {
     updateRegistrationAttendedStatus,
     addDonationForRegistration,
     getDonationHistoryForDonor,
+    getBloodRequestHistoryForHospital,
     createBloodRequest,
     getBloodRequestsForBank,
     getAvailableBloodUnitsForBank,
@@ -328,6 +329,21 @@ router.get('/donations/history/:donor_id', async (req, res) => {
     } catch (err) {
         console.error('Error fetching donation history:', err)
         res.status(500).json({ error: 'Failed to fetch donation history' })
+    }
+})
+
+// Get blood request history for a hospital
+router.get('/blood-requests/history/:hospital_id', async (req, res) => {
+    const { hospital_id } = req.params
+    if (!hospital_id) {
+        return res.status(400).json({ error: 'hospital_id is required' })
+    }
+    try {
+        const requests = await getBloodRequestHistoryForHospital(hospital_id)
+        res.json(requests)
+    } catch (err) {
+        console.error('Error fetching blood request history:', err)
+        res.status(500).json({ error: 'Failed to fetch blood request history' })
     }
 })
 

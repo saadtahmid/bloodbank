@@ -254,6 +254,28 @@ const Navbar = ({ user, setUser, onLogout }) => {
                         </li>
                     </>
                 )}
+                {user && user.role && user.role.toLowerCase() === 'hospital' && (
+                    <>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
+                                href="#request-blood"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#request-blood')}
+                            >
+                                Request Blood
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
+                                href="#request-history"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#request-history')}
+                            >
+                                Request History
+                            </a>
+                        </li>
+                    </>
+                )}
                 <li className="ml-4">
                     {user ? (
                         <div className="flex items-center gap-4">

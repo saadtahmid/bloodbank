@@ -18,6 +18,7 @@ import BloodBankTransfer from './components/BloodBankTransfer'
 import CreateCamp from './components/CreateCamp'
 import MyCamps from './components/MyCamps'
 import DonationHistory from './components/DonationHistory'
+import RequestHistory from './components/RequestHistory'
 import Profile from './components/Profile'
 import { useEffect, useState } from 'react'
 import { tokenStorage } from './utils/auth.js'
@@ -38,6 +39,7 @@ function App() {
   const [showCreateCamp, setShowCreateCamp] = useState(false)
   const [showMyCamps, setShowMyCamps] = useState(false)
   const [showDonationHistory, setShowDonationHistory] = useState(false)
+  const [showRequestHistory, setShowRequestHistory] = useState(false)
   const [user, setUser] = useState(null)
 
   // Check for stored authentication on app load
@@ -78,6 +80,7 @@ function App() {
       setShowCreateCamp(false)
       setShowMyCamps(false)
       setShowDonationHistory(false)
+      setShowRequestHistory(false)
 
       // Set the appropriate state based on hash
       switch (hash) {
@@ -125,6 +128,9 @@ function App() {
           break
         case '#donation-history':
           setShowDonationHistory(true)
+          break
+        case '#request-history':
+          setShowRequestHistory(true)
           break
         default:
           // Home page (includes #home and empty)
@@ -184,6 +190,8 @@ function App() {
           <MyCamps bloodbank_id={user?.bloodbank_id} />
         ) : showDonationHistory ? (
           <DonationHistory donor_id={user?.donor_id} />
+        ) : showRequestHistory ? (
+          <RequestHistory user={user} />
         ) : (
           <>
             <Intro />
