@@ -6,6 +6,7 @@ import cors from 'cors'
 import userRoutes from './routes/userRoutes.js'
 import locationRoutes from './routes/locationRoutes.js'
 import transferRoutes from './routes/transferRoutes.js'
+import statsRoutes from './routes/statsRoutes.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -20,6 +21,7 @@ app.use(express.json())
 app.use('/api', userRoutes)
 app.use('/api', locationRoutes)
 app.use('/api', transferRoutes)
+app.use('/api/stats', statsRoutes)
 
 // Basic route
 app.get('/', (req, res) => {

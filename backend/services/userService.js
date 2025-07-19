@@ -489,7 +489,7 @@ export async function getDonationHistoryForDonor(donor_id) {
             WHERE d.donor_id = ${donor_id}
             ORDER BY d.donation_date DESC
         `
-        
+
         return result.map(d => ({
             ...d,
             donation_date: d.donation_date ? d.donation_date.toISOString().slice(0, 10) : null,
@@ -517,7 +517,7 @@ export async function getBloodRequestHistoryForHospital(hospital_id) {
             WHERE r.hospital_id = ${hospital_id}
             ORDER BY r.request_date DESC
         `
-        
+
         return result.map(r => ({
             ...r,
             request_date: r.request_date ? r.request_date.toISOString().slice(0, 10) : null,
@@ -684,6 +684,57 @@ export async function updateBloodBankProfile(bloodbank_id, { location, contact_n
         return { success: true }
     } catch (err) {
         return { success: false, error: 'Failed to update blood bank profile' }
+    }
+}
+
+// Get system statistics
+export async function getSystemStats() {
+    try {
+        // Get total donations count
+        const donationsResult = await sql`
+            SELECT COUNT(*) as total_donations FROM bloodbank.donation
+        `
+
+        // Get active donors count
+        const donorsResult = await sql`
+            SELECT COUNT(*) as active_donors FROM bloodbank.donors
+        `
+
+        // Get total hospitals count
+        const hospitalsResult = await sql`
+            SELECT COUNT(*) as total_hospitals FROM bloodbank.hospital
+        `
+
+        // Get blood banks count
+        const bloodBanksResult = await sql`
+            SELECT COUNT(*) as total_blood_banks FROM bloodbank.bloodbank
+        `
+
+        // Get total available blood units (not expired)
+        const bloodUnitsResult = await sql`
+            SELECT COUNT(*) as total_units FROM bloodbank.bloodunit 
+            WHERE status = 'AVAILABLE' AND expiry_date > CURRENT_DATE
+        `
+
+        // Get total camps count
+        const campsResult = await sql`
+            SELECT COUNT(*) as total_camps FROM bloodbank.camp
+        `
+
+        const stats = {
+            totalDonations: parseInt(donationsResult[0].total_donations) || 0,
+            activeDonors: parseInt(donorsResult[0].active_donors) || 0,
+            totalHospitals: parseInt(hospitalsResult[0].total_hospitals) || 0,
+            totalBloodBanks: parseInt(bloodBanksResult[0].total_blood_banks) || 0,
+            availableUnits: parseInt(bloodUnitsResult[0].total_units) || 0,
+            totalCamps: parseInt(campsResult[0].total_camps) || 0
+        }
+
+        console.log('System stats from service:', stats)
+        return stats
+    } catch (error) {
+        console.error('Error fetching system statistics in service:', error)
+        throw error
     }
 }
 
