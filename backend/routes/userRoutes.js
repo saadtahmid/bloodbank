@@ -7,12 +7,15 @@ import {
     getAllHospitals,
     findUserByEmail,
     getCampsByDivision,
+    createCamp,
+    getCampsForBloodBank,
     registerUserWithRole,
     registerDonorForCamp,
     getRegisteredCampsForDonor,
     getRegistrationsForBloodBank,
     updateRegistrationAttendedStatus,
     addDonationForRegistration,
+    getDonationHistoryForDonor,
     createBloodRequest,
     getBloodRequestsForBank,
     getAvailableBloodUnitsForBank,
@@ -218,6 +221,78 @@ router.put('/camps/registration/:registration_id', async (req, res) => {
     }
 })
 
+// Create a new camp (for blood banks)
+router.post('/camps', verifyToken, async (req, res) => {
+    const { camp_name, location, start_date, end_date } = req.body
+
+    // Validate required fields
+    if (!camp_name || !location || !start_date || !end_date) {
+        return res.status(400).json({
+            success: false,
+            error: 'Camp name, location, start date, and end date are required'
+        })
+    }
+
+    // Validate dates
+    const startDate = new Date(start_date)
+    const endDate = new Date(end_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    if (startDate < today) {
+        return res.status(400).json({
+            success: false,
+            error: 'Start date cannot be in the past'
+        })
+    }
+
+    if (endDate < startDate) {
+        return res.status(400).json({
+            success: false,
+            error: 'End date cannot be before start date'
+        })
+    }
+
+    // Check if user is a blood bank
+    if (!req.user.bloodbank_id) {
+        return res.status(403).json({
+            success: false,
+            error: 'Only blood banks can create camps'
+        })
+    }
+
+    try {
+        const result = await createCamp(req.user.bloodbank_id, {
+            camp_name,
+            location,
+            start_date,
+            end_date
+        })
+
+        if (result.success) {
+            res.status(201).json(result)
+        } else {
+            res.status(400).json(result)
+        }
+    } catch (err) {
+        console.error('Error creating camp:', err)
+        res.status(500).json({ success: false, error: 'Failed to create camp' })
+    }
+})
+
+// Get camps for a specific blood bank
+router.get('/camps/bloodbank/:bloodbank_id', async (req, res) => {
+    const { bloodbank_id } = req.params
+
+    try {
+        const camps = await getCampsForBloodBank(bloodbank_id)
+        res.json(camps)
+    } catch (err) {
+        console.error('Error fetching camps for blood bank:', err)
+        res.status(500).json({ error: 'Failed to fetch camps' })
+    }
+})
+
 // Add a donation for a camp registration
 router.post('/donations', async (req, res) => {
     console.log('POST /api/donations called')
@@ -238,6 +313,21 @@ router.post('/donations', async (req, res) => {
     } catch (err) {
         console.error('Failed to add donation:', err)
         res.status(500).json({ error: 'Failed to add donation' })
+    }
+})
+
+// Get donation history for a donor
+router.get('/donations/history/:donor_id', async (req, res) => {
+    const { donor_id } = req.params
+    if (!donor_id) {
+        return res.status(400).json({ error: 'donor_id is required' })
+    }
+    try {
+        const donations = await getDonationHistoryForDonor(donor_id)
+        res.json(donations)
+    } catch (err) {
+        console.error('Error fetching donation history:', err)
+        res.status(500).json({ error: 'Failed to fetch donation history' })
     }
 })
 

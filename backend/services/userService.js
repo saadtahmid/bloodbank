@@ -224,6 +224,58 @@ export async function getCampsByDivision(division) {
     }))
 }
 
+// Create a new camp for a blood bank
+export async function createCamp(bloodbank_id, campData) {
+    const { camp_name, location, start_date, end_date } = campData
+
+    try {
+        const result = await sql`
+            INSERT INTO bloodbank.Camp (bloodbank_id, camp_name, location, start_date, end_date)
+            VALUES (${bloodbank_id}, ${camp_name}, ${location}, ${start_date}, ${end_date})
+            RETURNING camp_id, camp_name, location, start_date, end_date
+        `
+
+        if (result.length > 0) {
+            const camp = result[0]
+            return {
+                success: true,
+                camp: {
+                    ...camp,
+                    start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
+                    end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null
+                }
+            }
+        } else {
+            return { success: false, error: 'Failed to create camp' }
+        }
+    } catch (error) {
+        console.error('Error creating camp:', error)
+        return { success: false, error: 'Database error while creating camp' }
+    }
+}
+
+// Get camps for a specific blood bank
+export async function getCampsForBloodBank(bloodbank_id) {
+    try {
+        const result = await sql`
+            SELECT c.*, b.name as bloodbank_name
+            FROM bloodbank.Camp c
+            JOIN bloodbank.BloodBank b ON c.bloodbank_id = b.bloodbank_id
+            WHERE c.bloodbank_id = ${bloodbank_id}
+            ORDER BY c.start_date DESC
+        `
+
+        return result.map(camp => ({
+            ...camp,
+            start_date: camp.start_date ? camp.start_date.toISOString().slice(0, 10) : null,
+            end_date: camp.end_date ? camp.end_date.toISOString().slice(0, 10) : null,
+        }))
+    } catch (error) {
+        console.error('Error fetching camps for blood bank:', error)
+        return []
+    }
+}
+
 export async function registerDonorForCamp(donor_id, camp_id) {
     // Check if already registered
     const existing = await sql`
@@ -416,6 +468,36 @@ export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, un
 
 
     return { success: true, donation_id }
+}
+
+export async function getDonationHistoryForDonor(donor_id) {
+    try {
+        const result = await sql`
+            SELECT 
+                d.donation_id,
+                d.blood_type,
+                d.units,
+                d.donation_date,
+                bb.name as bloodbank_name,
+                bb.location as bloodbank_location,
+                bb.contact_number as bloodbank_phone,
+                c.camp_name,
+                c.location as camp_location
+            FROM bloodbank.Donation d
+            LEFT JOIN bloodbank.BloodBank bb ON d.bloodbank_id = bb.bloodbank_id
+            LEFT JOIN bloodbank.Camp c ON d.camp_id = c.camp_id
+            WHERE d.donor_id = ${donor_id}
+            ORDER BY d.donation_date DESC
+        `
+        
+        return result.map(d => ({
+            ...d,
+            donation_date: d.donation_date ? d.donation_date.toISOString().slice(0, 10) : null,
+        }))
+    } catch (err) {
+        console.error('Get donation history error:', err)
+        return []
+    }
 }
 
 // Get urgent needs for a donor (by blood type)

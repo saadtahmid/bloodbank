@@ -15,6 +15,9 @@ import AddDirectDonation from './components/AddDirectDonation'
 import DonorUrgentNeeds from './components/DonorUrgentNeeds'
 import BloodBankUrgentNeeds from './components/BloodBankUrgentNeeds'
 import BloodBankTransfer from './components/BloodBankTransfer'
+import CreateCamp from './components/CreateCamp'
+import MyCamps from './components/MyCamps'
+import DonationHistory from './components/DonationHistory'
 import Profile from './components/Profile'
 import { useEffect, useState } from 'react'
 import { tokenStorage } from './utils/auth.js'
@@ -32,6 +35,9 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [showTransfers, setShowTransfers] = useState(false)
+  const [showCreateCamp, setShowCreateCamp] = useState(false)
+  const [showMyCamps, setShowMyCamps] = useState(false)
+  const [showDonationHistory, setShowDonationHistory] = useState(false)
   const [user, setUser] = useState(null)
 
   // Check for stored authentication on app load
@@ -69,6 +75,9 @@ function App() {
       setShowProfile(false)
       setShowAbout(false)
       setShowTransfers(false)
+      setShowCreateCamp(false)
+      setShowMyCamps(false)
+      setShowDonationHistory(false)
 
       // Set the appropriate state based on hash
       switch (hash) {
@@ -107,6 +116,15 @@ function App() {
           break
         case '#transfers':
           setShowTransfers(true)
+          break
+        case '#create-camp':
+          setShowCreateCamp(true)
+          break
+        case '#my-camps':
+          setShowMyCamps(true)
+          break
+        case '#donation-history':
+          setShowDonationHistory(true)
           break
         default:
           // Home page (includes #home and empty)
@@ -160,6 +178,12 @@ function App() {
           <About />
         ) : showTransfers ? (
           <BloodBankTransfer user={user} />
+        ) : showCreateCamp ? (
+          <CreateCamp bloodbank_id={user?.bloodbank_id} />
+        ) : showMyCamps ? (
+          <MyCamps bloodbank_id={user?.bloodbank_id} />
+        ) : showDonationHistory ? (
+          <DonationHistory donor_id={user?.donor_id} />
         ) : (
           <>
             <Intro />

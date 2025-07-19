@@ -196,6 +196,24 @@ const Navbar = ({ user, setUser, onLogout }) => {
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
                             <a
+                                href="#create-camp"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#create-camp')}
+                            >
+                                Create Camp
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
+                                href="#my-camps"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#my-camps')}
+                            >
+                                My Camps
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
                                 href="#add-donation"
                                 className="text-white hover:text-red-400 font-semibold transition-all duration-300"
                                 onClick={() => handleNavClick('#add-donation')}
@@ -215,15 +233,26 @@ const Navbar = ({ user, setUser, onLogout }) => {
                     </>
                 )}
                 {user && user.role && user.role.toLowerCase() === 'donor' && (
-                    <li className="transform transition-all duration-200 hover:scale-110">
-                        <a
-                            href="#urgent-needs"
-                            className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                            onClick={() => handleNavClick('#urgent-needs')}
-                        >
-                            Urgent Needs
-                        </a>
-                    </li>
+                    <>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
+                                href="#urgent-needs"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#urgent-needs')}
+                            >
+                                Urgent Needs
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
+                                href="#donation-history"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#donation-history')}
+                            >
+                                My Donations
+                            </a>
+                        </li>
+                    </>
                 )}
                 <li className="ml-4">
                     {user ? (
