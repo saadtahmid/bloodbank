@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { generateToken, verifyToken, optionalAuth } from '../middleware/auth.js'
 import {
     getAllUsers,
     getAllDonors,
@@ -70,19 +71,58 @@ router.get('/hospitals', async (req, res) => {
 })
 
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body // Remove role from destructuring
+    const { email, password } = req.body
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' })
     }
     try {
-        const user = await findUserByEmail(email, password) // Use new function
+        const user = await findUserByEmail(email, password)
         if (user) {
-            res.json({ success: true, user })
+            // Generate JWT token
+            const token = generateToken(user)
+            res.json({
+                success: true,
+                user,
+                token,
+                message: 'Login successful'
+            })
         } else {
             res.status(401).json({ success: false, error: 'Invalid credentials' })
         }
     } catch (err) {
+        console.error('Login error:', err)
         res.status(500).json({ error: 'Login failed' })
+    }
+})
+
+// Protected route to get current user info
+router.get('/me', verifyToken, async (req, res) => {
+    try {
+        // req.user is set by the verifyToken middleware
+        res.json({
+            success: true,
+            user: req.user,
+            message: 'User authenticated'
+        })
+    } catch (err) {
+        console.error('Get current user error:', err)
+        res.status(500).json({ error: 'Failed to get user info' })
+    }
+})
+
+// Route to refresh token
+router.post('/refresh-token', verifyToken, async (req, res) => {
+    try {
+        // Generate a new token with updated info
+        const token = generateToken(req.user)
+        res.json({
+            success: true,
+            token,
+            message: 'Token refreshed successfully'
+        })
+    } catch (err) {
+        console.error('Token refresh error:', err)
+        res.status(500).json({ error: 'Failed to refresh token' })
     }
 })
 
@@ -351,6 +391,7 @@ router.get('/urgent-needs/for-donor/:donor_id', async (req, res) => {
         const urgent = await getUrgentNeedsForDonor(req.params.donor_id)
         res.json(urgent)
     } catch (err) {
+        console.error('Error in urgent-needs/for-donor:', err)
         res.status(500).json({ error: 'Failed to fetch urgent needs' })
     }
 })

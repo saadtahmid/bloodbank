@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { tokenStorage } from '../utils/auth.js'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -102,13 +103,23 @@ const Login = ({ setUser }) => {
             })
             const data = await res.json()
             if (res.ok && data.success) {
-                alert('Login successful!\n' + JSON.stringify(data.user, null, 2))
-                setUser(data.user) // Set user in App state
+                // Store JWT token and user data
+                tokenStorage.setToken(data.token)
+                tokenStorage.setUserData(data.user)
+
+                // Set user in App state
+                setUser(data.user)
+
+                // Show success message
+                alert('Login successful! Welcome back!')
+
+                // Redirect to home
                 window.location.hash = '#home'
             } else {
                 setLoginError(data.error || 'Login failed')
             }
         } catch (err) {
+            console.error('Login error:', err)
             setLoginError('Network error')
         }
     }

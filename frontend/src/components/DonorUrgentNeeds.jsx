@@ -4,14 +4,33 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const DonorUrgentNeeds = ({ donor_id }) => {
     const [urgentNeeds, setUrgentNeeds] = useState([])
     const [loading, setLoading] = useState(false)
+    const [showContact, setShowContact] = useState({}) // Track which contact info is shown
+
+    const handleContactClick = (urgent_need_id) => {
+        setShowContact(prev => ({
+            ...prev,
+            [urgent_need_id]: !prev[urgent_need_id]
+        }))
+    }
 
     useEffect(() => {
         if (donor_id) {
             setLoading(true)
             fetch(`${API_BASE_URL}/api/urgent-needs/for-donor/${donor_id}`)
-                .then(res => res.json())
-                .then(data => setUrgentNeeds(data))
-                .catch(() => setUrgentNeeds([]))
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`)
+                    }
+                    return res.json()
+                })
+                .then(data => {
+                    // Ensure we always have an array
+                    setUrgentNeeds(Array.isArray(data) ? data : [])
+                })
+                .catch(err => {
+                    console.error('Error fetching urgent needs:', err)
+                    setUrgentNeeds([])
+                })
                 .finally(() => setLoading(false))
         }
     }, [donor_id])
@@ -69,8 +88,8 @@ const DonorUrgentNeeds = ({ donor_id }) => {
 
                                 <div className="grid md:grid-cols-2 gap-4 mb-6">
                                     <div className="bg-gray-900/50 rounded-xl p-4">
-                                        <label className="text-sm text-gray-400">Blood Bank ID</label>
-                                        <div className="text-white font-semibold">{need.bloodbank_id}</div>
+                                        <label className="text-sm text-gray-400">Blood Bank</label>
+                                        <div className="text-white font-semibold">{need.bloodbank_name || `ID: ${need.bloodbank_id}`}</div>
                                     </div>
                                     <div className="bg-gray-900/50 rounded-xl p-4">
                                         <label className="text-sm text-gray-400">Blood Type</label>
@@ -93,13 +112,32 @@ const DonorUrgentNeeds = ({ donor_id }) => {
                                     </div>
                                 )}
 
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <button className="button-modern flex-1 py-3 rounded-xl font-semibold text-white shadow-xl">
-                                        Contact Blood Bank
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={() => handleContactClick(need.urgent_need_id)}
+                                        className="button-modern w-full py-3 rounded-xl font-semibold text-white shadow-xl transition-all duration-200 hover:scale-105"
+                                    >
+                                        {showContact[need.urgent_need_id] ? 'Hide Contact Info' : 'Contact Blood Bank'}
                                     </button>
-                                    <button className="bg-green-600 hover:bg-green-700 flex-1 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:scale-105 shadow-lg">
-                                        Donate Now
-                                    </button>
+
+                                    {showContact[need.urgent_need_id] && need.bloodbank_contact && (
+                                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 animate-fadeInUp">
+                                            <label className="text-sm text-blue-400 font-semibold">Contact Information</label>
+                                            <div className="text-white mt-1 font-semibold text-lg">{need.bloodbank_contact}</div>
+                                            <p className="text-gray-300 text-sm mt-2">
+                                                Contact the blood bank directly to arrange your donation.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {showContact[need.urgent_need_id] && !need.bloodbank_contact && (
+                                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 animate-fadeInUp">
+                                            <label className="text-sm text-yellow-400 font-semibold">Contact Information</label>
+                                            <div className="text-gray-300 mt-1">
+                                                Contact information not available. Please call the emergency hotline below.
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

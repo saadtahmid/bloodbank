@@ -14,8 +14,10 @@ import BloodInventory from './components/BloodInventory'
 import AddDirectDonation from './components/AddDirectDonation'
 import DonorUrgentNeeds from './components/DonorUrgentNeeds'
 import BloodBankUrgentNeeds from './components/BloodBankUrgentNeeds'
+import BloodBankTransfer from './components/BloodBankTransfer'
 import Profile from './components/Profile'
 import { useEffect, useState } from 'react'
+import { tokenStorage } from './utils/auth.js'
 
 function App() {
   const [showDirectory, setShowDirectory] = useState(false)
@@ -29,7 +31,26 @@ function App() {
   const [showUrgentNeeds, setShowUrgentNeeds] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [showTransfers, setShowTransfers] = useState(false)
   const [user, setUser] = useState(null)
+
+  // Check for stored authentication on app load
+  useEffect(() => {
+    const storedUser = tokenStorage.getUserData()
+    if (storedUser && tokenStorage.isAuthenticated()) {
+      setUser(storedUser)
+    } else {
+      // Clear invalid or expired tokens
+      tokenStorage.removeToken()
+    }
+  }, [])
+
+  // Logout function
+  const handleLogout = () => {
+    tokenStorage.removeToken()
+    setUser(null)
+    window.location.hash = '#home'
+  }
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -47,6 +68,7 @@ function App() {
       setShowUrgentNeeds(false)
       setShowProfile(false)
       setShowAbout(false)
+      setShowTransfers(false)
 
       // Set the appropriate state based on hash
       switch (hash) {
@@ -83,6 +105,9 @@ function App() {
         case '#about':
           setShowAbout(true)
           break
+        case '#transfers':
+          setShowTransfers(true)
+          break
         default:
           // Home page (includes #home and empty)
           break
@@ -101,7 +126,7 @@ function App() {
 
   return (
     <div className="homepage-container min-h-screen flex flex-col bg-black">
-      <Navbar user={user} setUser={setUser} />
+      <Navbar user={user} setUser={setUser} onLogout={handleLogout} />
 
       {/* Only show Header on home page */}
       {isHomePage && <Header />}
@@ -133,6 +158,8 @@ function App() {
           <Profile user={user} />
         ) : showAbout ? (
           <About />
+        ) : showTransfers ? (
+          <BloodBankTransfer user={user} />
         ) : (
           <>
             <Intro />
@@ -142,7 +169,6 @@ function App() {
       </main>
 
       <Footer />
-
     </div>
   )
 }

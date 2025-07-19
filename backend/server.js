@@ -1,11 +1,11 @@
 // Main entry point: sets up express, imports routers, and starts the server
 
+import 'dotenv/config'
 import express from 'express'
-import locationRoutes from './routes/locationRoutes.js'
-import userRoutes from './routes/userRoutes.js'
 import cors from 'cors'
-// ...import other routers as you create them...
-
+import userRoutes from './routes/userRoutes.js'
+import locationRoutes from './routes/locationRoutes.js'
+import transferRoutes from './routes/transferRoutes.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -16,15 +16,27 @@ app.use(cors({
 }))
 app.use(express.json())
 
-// Register routers
-app.use('/api/locations', locationRoutes)
+// Routes
 app.use('/api', userRoutes)
-// app.use('/api/bloodbanks', bloodBankRoutes) // Example for future
+app.use('/api', locationRoutes)
+app.use('/api', transferRoutes)
+
+// Basic route
 app.get('/', (req, res) => {
-    res.send('Welcome to the Blood Donation API')})
+    res.json({ message: 'Blood Bank Management System API' })
+})
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).json({ error: 'Something went wrong!' })
+})
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
+
+export default app
 
 
 

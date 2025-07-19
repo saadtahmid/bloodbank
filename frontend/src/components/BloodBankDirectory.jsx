@@ -14,7 +14,7 @@ const BloodBankDirectory = () => {
 
     // Fetch divisions on mount
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/locations/divisions`)
+        fetch(`${API_BASE_URL}/api/divisions`)
             .then(res => {
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`)
@@ -32,7 +32,7 @@ const BloodBankDirectory = () => {
     // Fetch districts when division changes
     useEffect(() => {
         if (division && division !== 'ANY') {
-            fetch(`${API_BASE_URL}/api/locations/districts?division=${encodeURIComponent(division)}`)
+            fetch(`${API_BASE_URL}/api/districts?division=${encodeURIComponent(division)}`)
                 .then(res => res.json())
                 .then(data => {
                     setDistricts(data)
@@ -54,7 +54,7 @@ const BloodBankDirectory = () => {
     // Fetch cities when district changes
     useEffect(() => {
         if (district && district !== 'ANY') {
-            fetch(`${API_BASE_URL}/api/locations/cities?district=${encodeURIComponent(district)}`)
+            fetch(`${API_BASE_URL}/api/cities?district=${encodeURIComponent(district)}`)
                 .then(res => res.json())
                 .then(data => {
                     setCities(data)
@@ -75,7 +75,7 @@ const BloodBankDirectory = () => {
         const div = division === 'ANY' ? '' : division
         const dist = district === 'ANY' ? '' : district
         const c = city === 'ANY' ? '' : city
-        fetch(`${API_BASE_URL}/api/locations/search-bloodbanks?division=${encodeURIComponent(div)}&district=${encodeURIComponent(dist)}&city=${encodeURIComponent(c)}`)
+        fetch(`${API_BASE_URL}/api/search-bloodbanks?division=${encodeURIComponent(div)}&district=${encodeURIComponent(dist)}&city=${encodeURIComponent(c)}`)
             .then(res => res.json())
             .then(data => setResults(data))
             .catch(() => setResults([]))

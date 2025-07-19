@@ -1,5 +1,6 @@
 import sql from '../db.js'
-import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
+import bcrypt from 'bcryptjs'
+import { FulfillmentService } from './fulfillmentService.js'
 
 // Get all users
 export async function getAllUsers() {
@@ -30,28 +31,31 @@ export async function getAllHospitals() {
     return result
 }
 
-function hashPassword(password) {
-    const salt = randomBytes(8).toString('hex')
-    const hash = scryptSync(password, salt, 32).toString("base64")
-    return `${salt}:${hash}`
+// Hash password using bcrypt
+async function hashPassword(password) {
+    const saltRounds = 12
+    return await bcrypt.hash(password, saltRounds)
 }
 
-function verifyPassword(password, hashed) {
+// Verify password using bcrypt with fallback to old crypto method for existing users
+async function verifyPassword(password, hashed) {
+    // Check if it's a bcrypt hash (starts with $2a$, $2b$, or $2y$)
+    if (hashed.startsWith('$2')) {
+        return await bcrypt.compare(password, hashed)
+    }
+
+    // Fallback to old crypto method for existing users
+    const { scryptSync, randomBytes, timingSafeEqual } = await import('crypto')
     const [salt, key] = hashed.split(':')
-    // Try base64 first
     try {
         const hashBuffer = Buffer.from(key, 'base64')
         const testBuffer = scryptSync(password, salt, 32)
         if (timingSafeEqual(hashBuffer, testBuffer)) return true
     } catch { }
-    // Fallback to hex for old passwords
     try {
         const hashBuffer = Buffer.from(key, 'hex')
         const testBuffer = scryptSync(password, salt, 32)
-        if (timingSafeEqual(hashBuffer, testBuffer)) {
-            // Optionally: re-hash and update password in DB to base64
-            return true
-        }
+        if (timingSafeEqual(hashBuffer, testBuffer)) return true
     } catch { }
     return false
 }
@@ -66,7 +70,7 @@ export async function registerUserWithRole(email, password, role, details) {
     console.log('User count before insert:', userCount[0].count)
     console.log('registerUserWithRole called with:', { email, role, details })
     // Hash the password
-    const hashedPassword = hashPassword(password)
+    const hashedPassword = await hashPassword(password)
     console.log('Hashed password:', hashedPassword)
     //find count of users before insert
 
@@ -163,7 +167,7 @@ export async function findUserByEmail(email, password) {
     console.log('User found:', user)
 
     // Verify password
-    if (!verifyPassword(password, user.password)) {
+    if (!(await verifyPassword(password, user.password))) {
         console.log('Invalid password for user:', email)
         return null
     }
@@ -353,42 +357,39 @@ export async function getAvailableBloodUnitsForBank(bloodbank_id) {
 }
 
 export async function fulfillBloodRequest(request_id) {
-    // Get request details
-    const req = await sql`
-        SELECT * FROM bloodbank.BloodRequest WHERE request_id = ${request_id}
-    `
-    if (!req[0]) return { success: false, error: 'Request not found' }
-    const { blood_type, units_requested, requested_to } = req[0]
+    try {
+        // Get request details
+        const req = await sql`
+            SELECT * FROM bloodbank.BloodRequest WHERE request_id = ${request_id}
+        `
+        if (!req[0]) return { success: false, error: 'Request not found' }
 
-    // Get available units (oldest first)
-    const available = await sql`
-        SELECT unit_id FROM bloodbank.BloodUnit
-        WHERE bloodbank_id = ${requested_to}
-          AND blood_type = ${blood_type}
-          AND status = 'AVAILABLE'
-        ORDER BY expiry_date ASC, collected_date ASC
-        LIMIT ${units_requested}
-    `
-    if (available.length < units_requested) {
-        return { success: false, error: 'Not enough units available' }
+        const { blood_type, units_requested, requested_to } = req[0]
+
+        // Use consistent fulfillment service
+        const consumption = await FulfillmentService.consumeUnits(
+            requested_to,
+            blood_type,
+            units_requested,
+            request_id
+        )
+
+        if (!consumption.success) {
+            return { success: false, error: consumption.error }
+        }
+
+        // Update request status
+        await sql`
+            UPDATE bloodbank.BloodRequest
+            SET status = 'FULFILLED'
+            WHERE request_id = ${request_id}
+        `
+
+        return { success: true, consumed_units: consumption.consumed_units }
+    } catch (err) {
+        console.error('Fulfill blood request error:', err)
+        return { success: false, error: 'Failed to fulfill request' }
     }
-
-    // Mark units as USED
-    const unitIds = available.map(u => u.unit_id)
-    await sql`
-        UPDATE bloodbank.BloodUnit
-        SET status = 'USED'
-        WHERE unit_id = ANY(${unitIds})
-    `
-
-    // Update request status
-    await sql`
-        UPDATE bloodbank.BloodRequest
-        SET status = 'FULFILLED'
-        WHERE request_id = ${request_id}
-    `
-
-    return { success: true, used_units: unitIds }
 }
 
 export async function getDonorById(donor_id) {
@@ -419,14 +420,52 @@ export async function addDirectDonation({ donor_id, bloodbank_id, blood_type, un
 
 // Get urgent needs for a donor (by blood type)
 export async function getUrgentNeedsForDonor(donor_id) {
-    const donor = await sql`SELECT blood_type FROM bloodbank.Donors WHERE donor_id = ${donor_id}`
-    if (!donor[0]) return []
-    const urgent = await sql`
-        SELECT * FROM bloodbank.UrgentNeed
-        WHERE status = 'OPEN' AND blood_type = ${donor[0].blood_type}
-        ORDER BY posted_date DESC
-    `
-    return urgent
+    try {
+        // Get the donor's blood type
+        const donor = await sql`SELECT blood_type FROM bloodbank.Donors WHERE donor_id = ${donor_id}`
+
+        if (!donor[0]) {
+            return []
+        }
+
+        // Get urgent needs for this blood type
+        const urgent = await sql`
+            SELECT * FROM bloodbank.UrgentNeed 
+            WHERE status = 'OPEN' AND blood_type = ${donor[0].blood_type}
+            ORDER BY posted_date DESC
+        `
+
+        // For each urgent need, get blood bank info separately
+        const urgentWithBankInfo = await Promise.all(
+            urgent.map(async (need) => {
+                try {
+                    const bankInfo = await sql`
+                        SELECT name, contact_number as contact_info 
+                        FROM bloodbank.BloodBank 
+                        WHERE bloodbank_id = ${need.bloodbank_id}
+                    `
+                    return {
+                        ...need,
+                        bloodbank_name: bankInfo[0]?.name || null,
+                        bloodbank_contact: bankInfo[0]?.contact_info || null
+                    }
+                } catch (err) {
+                    // If bank info fails, still return the urgent need without bank details
+                    return {
+                        ...need,
+                        bloodbank_name: null,
+                        bloodbank_contact: null
+                    }
+                }
+            })
+        )
+
+        return urgentWithBankInfo
+
+    } catch (error) {
+        console.error('Error in getUrgentNeedsForDonor:', error)
+        throw error
+    }
 }
 
 // Get urgent needs for a blood bank

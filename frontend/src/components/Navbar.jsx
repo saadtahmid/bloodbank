@@ -3,7 +3,7 @@ import NotificationMenu from './NotificationMenu'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const Navbar = ({ user, setUser }) => {
+const Navbar = ({ user, setUser, onLogout }) => {
     const [showLookingDropdown, setShowLookingDropdown] = useState(false)
     const [showDonateDropdown, setShowDonateDropdown] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -187,6 +187,15 @@ const Navbar = ({ user, setUser }) => {
                         </li>
                         <li className="transform transition-all duration-200 hover:scale-110">
                             <a
+                                href="#transfers"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#transfers')}
+                            >
+                                Transfers
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
                                 href="#add-donation"
                                 className="text-white hover:text-red-400 font-semibold transition-all duration-300"
                                 onClick={() => handleNavClick('#add-donation')}
@@ -233,8 +242,7 @@ const Navbar = ({ user, setUser }) => {
                             <button
                                 onClick={() => {
                                     if (window.confirm('Are you sure you want to logout?')) {
-                                        setUser(null)
-                                        handleNavClick('#home')
+                                        onLogout() // Use the proper logout function
                                     }
                                 }}
                                 className="button-modern text-white px-6 py-2 rounded-full font-semibold shadow-lg"

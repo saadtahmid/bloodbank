@@ -14,7 +14,7 @@ const ViewCamps = ({ user }) => {
     const [loading, setLoading] = useState(false)
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/locations/divisions`)
+        fetch(`${API_BASE_URL}/api/divisions`)
             .then(res => res.json())
             .then(data => setDivisions(data))
             .catch(() => setDivisions([]))
