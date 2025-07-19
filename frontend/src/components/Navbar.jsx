@@ -158,77 +158,112 @@ const Navbar = ({ user, setUser, onLogout }) => {
                 </li>
                 {user && user.role && user.role.toLowerCase() === 'bloodbank' && (
                     <>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#camp-registrations"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#camp-registrations')}
-                            >
-                                Camp Registrations
-                            </a>
+                        {/* Inventory Management Dropdown */}
+                        <li className="relative group">
+                            <button className="text-white hover:text-red-400 font-semibold transition-all duration-300 flex items-center">
+                                Inventory
+                                <svg className="w-4 h-4 ml-1 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <ul className="absolute left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                                <li>
+                                    <a
+                                        href="#blood-inventory"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#blood-inventory')}
+                                    >
+                                        📦 Blood Inventory
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#add-donation"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#add-donation')}
+                                    >
+                                        ➕ Add Donation
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#transfers"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#transfers')}
+                                    >
+                                        🔄 Transfers
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#blood-requests"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#blood-requests')}
-                            >
-                                Blood Requests
-                            </a>
+
+                        {/* Camp Management Dropdown */}
+                        <li className="relative group">
+                            <button className="text-white hover:text-red-400 font-semibold transition-all duration-300 flex items-center">
+                                Camps
+                                <svg className="w-4 h-4 ml-1 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <ul className="absolute left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                                <li>
+                                    <a
+                                        href="#create-camp"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#create-camp')}
+                                    >
+                                        🏕️ Create Camp
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#my-camps"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#my-camps')}
+                                    >
+                                        📋 My Camps
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#camp-registrations"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#camp-registrations')}
+                                    >
+                                        👥 Registrations
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#blood-inventory"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#blood-inventory')}
-                            >
-                                Blood Inventory
-                            </a>
-                        </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#transfers"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#transfers')}
-                            >
-                                Transfers
-                            </a>
-                        </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#create-camp"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#create-camp')}
-                            >
-                                Create Camp
-                            </a>
-                        </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#my-camps"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#my-camps')}
-                            >
-                                My Camps
-                            </a>
-                        </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#add-donation"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#add-donation')}
-                            >
-                                Add Donation
-                            </a>
-                        </li>
-                        <li className="transform transition-all duration-200 hover:scale-110">
-                            <a
-                                href="#urgent-needs"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
-                                onClick={() => handleNavClick('#urgent-needs')}
-                            >
-                                Urgent Needs
-                            </a>
+
+                        {/* Requests & Needs Dropdown */}
+                        <li className="relative group">
+                            <button className="text-white hover:text-red-400 font-semibold transition-all duration-300 flex items-center">
+                                Requests
+                                <svg className="w-4 h-4 ml-1 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <ul className="absolute left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                                <li>
+                                    <a
+                                        href="#blood-requests"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#blood-requests')}
+                                    >
+                                        🩸 Blood Requests
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#urgent-needs"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#urgent-needs')}
+                                    >
+                                        🚨 Urgent Needs
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     </>
                 )}
