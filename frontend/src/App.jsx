@@ -22,6 +22,7 @@ import RequestHistory from './components/RequestHistory'
 import Profile from './components/Profile'
 import { useEffect, useState } from 'react'
 import { tokenStorage } from './utils/auth.js'
+import Chatbot from './components/Chatbot'
 
 function App() {
   const [showDirectory, setShowDirectory] = useState(false)
@@ -201,6 +202,7 @@ function App() {
       </main>
 
       <Footer />
+      <Chatbot user={user} />
     </div>
   )
 }
