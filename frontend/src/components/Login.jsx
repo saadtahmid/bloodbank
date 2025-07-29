@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { tokenStorage } from '../utils/auth.js'
+import ProfileImageUpload from './ProfileImageUpload.jsx'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -38,6 +39,7 @@ const Login = ({ setUser }) => {
         birth_date: '',
         last_donation_date: '',
     })
+    const [uploadedImageUrl, setUploadedImageUrl] = useState(null)
     const [passwordTouched, setPasswordTouched] = useState(false)
     const [loginError, setLoginError] = useState('')
 
@@ -67,16 +69,24 @@ const Login = ({ setUser }) => {
     const handleRegister = async (e) => {
         e.preventDefault()
         try {
+            // Include image URL in the registration data
+            const registrationData = {
+                ...form,
+                image_url: uploadedImageUrl
+            }
+
             const res = await fetch(`${API_BASE_URL}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(registrationData)
             })
             const data = await res.json()
             if (res.ok && data.success) {
                 alert('Registration successful! You can now login.')
                 setStep(1)
                 setIsRegister(false)
+                // Reset form and uploaded image
+                setUploadedImageUrl(null)
             } else {
                 alert(data.error || 'Registration failed')
                 setStep(1)
@@ -254,6 +264,22 @@ const Login = ({ setUser }) => {
                                 onChange={handleChange}
                                 required
                             />
+
+                            {/* Profile Image Upload */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-300">
+                                    Profile Picture (Optional)
+                                </label>
+                                <ProfileImageUpload
+                                    onImageUpload={(imageUrl) => setUploadedImageUrl(imageUrl)}
+                                    currentImageUrl={uploadedImageUrl}
+                                    isRegistration={true}
+                                />
+                                {uploadedImageUrl && (
+                                    <p className="text-sm text-green-400">✓ Profile picture uploaded successfully</p>
+                                )}
+                            </div>
+
                             {/* Role-specific fields */}
                             {form.role === 'Donor' && (
                                 <>

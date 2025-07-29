@@ -3,9 +3,9 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell, Area, AreaChart, RadialBarChart, RadialBar
 } from 'recharts'
-import { 
-    TrendingUp, AlertTriangle, CheckCircle, Clock, Activity, 
-    Package, Users, Calendar, Target, Award, Zap 
+import {
+    TrendingUp, AlertTriangle, CheckCircle, Clock, Activity,
+    Package, Users, Calendar, Target, Award, Zap
 } from 'lucide-react'
 
 const BloodBankDashboard = ({ bloodbank_id }) => {
@@ -280,12 +280,11 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                             {analytics.topHospitals.map((hospital, index) => (
                                 <div key={hospital.hospital_id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
                                     <div className="flex items-center">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 ${
-                                            index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                            index === 1 ? 'bg-gray-500/20 text-gray-400' :
-                                            index === 2 ? 'bg-orange-500/20 text-orange-400' :
-                                            'bg-gray-600/20 text-gray-300'
-                                        }`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                                                index === 1 ? 'bg-gray-500/20 text-gray-400' :
+                                                    index === 2 ? 'bg-orange-500/20 text-orange-400' :
+                                                        'bg-gray-600/20 text-gray-300'
+                                            }`}>
                                             {index + 1}
                                         </div>
                                         <div>
@@ -351,12 +350,11 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                             {activity.date}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                activity.type === 'donation' ? 'bg-green-500/20 text-green-400' :
-                                                activity.type === 'request' ? 'bg-blue-500/20 text-blue-400' :
-                                                activity.type === 'emergency' ? 'bg-red-500/20 text-red-400' :
-                                                'bg-gray-500/20 text-gray-400'
-                                            }`}>
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${activity.type === 'donation' ? 'bg-green-500/20 text-green-400' :
+                                                    activity.type === 'request' ? 'bg-blue-500/20 text-blue-400' :
+                                                        activity.type === 'emergency' ? 'bg-red-500/20 text-red-400' :
+                                                            'bg-gray-500/20 text-gray-400'
+                                                }`}>
                                                 {activity.type}
                                             </span>
                                         </td>
@@ -364,11 +362,10 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                             {activity.description}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                                activity.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                'bg-red-500/20 text-red-400'
-                                            }`}>
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                                    activity.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
+                                                }`}>
                                                 {activity.status}
                                             </span>
                                         </td>

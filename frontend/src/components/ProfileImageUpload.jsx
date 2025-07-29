@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { tokenStorage } from '../utils/auth';
 
-const ProfileImageUpload = ({ currentImageUrl, onImageUpdate }) => {
+const ProfileImageUpload = ({ currentImageUrl, onImageUpdate, onImageUpload, isRegistration = false }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
     const fileInputRef = useRef(null);
@@ -57,14 +57,16 @@ const ProfileImageUpload = ({ currentImageUrl, onImageUpdate }) => {
             const formData = new FormData();
             formData.append('image', file);
 
-            console.log('Uploading to:', `/api/users/upload-image`);
-            console.log('Auth header:', tokenStorage.getAuthHeader());
+            // Use different endpoints for registration vs profile update
+            const endpoint = isRegistration ? `/api/users/upload-registration-image` : `/api/users/upload-image`;
+            const headers = isRegistration ? {} : tokenStorage.getAuthHeader();
 
-            const response = await fetch(`/api/users/upload-image`, {
+            console.log('Uploading to:', endpoint);
+            console.log('Auth header:', headers);
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    ...tokenStorage.getAuthHeader()
-                },
+                headers: headers,
                 body: formData
             });
 
@@ -74,7 +76,12 @@ const ProfileImageUpload = ({ currentImageUrl, onImageUpdate }) => {
 
             if (result.success) {
                 setPreviewUrl(`${result.image_url}`);
-                onImageUpdate?.(result.image_url);
+                // Call the appropriate callback based on usage
+                if (isRegistration) {
+                    onImageUpload?.(result.image_url);
+                } else {
+                    onImageUpdate?.(result.image_url);
+                }
                 alert('Profile image updated successfully!');
             } else {
                 throw new Error(result.error || 'Upload failed');

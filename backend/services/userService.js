@@ -78,15 +78,12 @@ export async function registerUserWithRole(email, password, role, details) {
     const userCountInt = parseInt(userCount[0].count, 10) + 1
     const user_id = userCountInt
 
-
-
-
-
-
+    // Extract image_url from details if provided
+    const image_url = details.image_url || null
 
     const userRes = await sql`
-        INSERT INTO bloodbank.Users (user_id,email, password, role)
-        VALUES (${user_id},${email}, ${hashedPassword}, ${role})
+        INSERT INTO bloodbank.Users (user_id, email, password, role, image_url)
+        VALUES (${user_id}, ${email}, ${hashedPassword}, ${role}, ${image_url})
         RETURNING user_id
     `
 
@@ -1237,7 +1234,7 @@ export async function getBloodBankAnalytics(bloodbank_id) {
         `
 
         // Calculate performance metrics
-        const fulfillmentRate = fulfillmentStats[0].total_requests > 0 
+        const fulfillmentRate = fulfillmentStats[0].total_requests > 0
             ? (fulfillmentStats[0].fulfilled_requests / fulfillmentStats[0].total_requests * 100).toFixed(1)
             : 0
 

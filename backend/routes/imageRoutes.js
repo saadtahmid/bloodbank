@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import { verifyToken } from '../middleware/auth.js';
-import { upload, uploadProfileImage } from '../middleware/imageUpload.js';
+import { upload, uploadProfileImage, uploadRegistrationImage } from '../middleware/imageUpload.js';
 
 const router = Router();
 
-// Upload profile image
+// Upload profile image (requires authentication)
 router.post('/upload-image', verifyToken, upload.single('image'), uploadProfileImage);
+
+// Upload profile image for registration (no authentication required)
+router.post('/upload-registration-image', upload.single('image'), uploadRegistrationImage);
 
 // Get user profile with image
 router.get('/profile', verifyToken, async (req, res) => {
