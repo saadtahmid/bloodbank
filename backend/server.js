@@ -1,13 +1,17 @@
-// Main entry point: sets up express, imports routers, and starts the server
-
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import userRoutes from './routes/userRoutes.js'
 import locationRoutes from './routes/locationRoutes.js'
 import transferRoutes from './routes/transferRoutes.js'
 import statsRoutes from './routes/statsRoutes.js'
 import chatbotRoutes from './routes/chatbotRoutes.js'
+import imageRoutes from './routes/imageRoutes.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -18,12 +22,16 @@ app.use(cors({
 }))
 app.use(express.json())
 
+// Serve static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
 // Routes
 app.use('/api', userRoutes)
 app.use('/api', locationRoutes)
 app.use('/api', transferRoutes)
 app.use('/api/stats', statsRoutes)
 app.use('/api/chatbot', chatbotRoutes)
+app.use('/api/users', imageRoutes)
 
 // Basic route
 app.get('/', (req, res) => {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import NotificationMenu from './NotificationMenu'
+import ProfileImage from './ProfileImage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -9,6 +10,16 @@ const Navbar = ({ user, setUser, onLogout }) => {
     const [showNotifications, setShowNotifications] = useState(false)
     const [notifCount, setNotifCount] = useState(0)
     const notifRef = useRef(null)
+
+    const getRoleIcon = () => {
+        if (!user) return '👤'
+        switch (user.role?.toLowerCase()) {
+            case 'donor': return '🩸'
+            case 'hospital': return '🏥'
+            case 'bloodbank': return '🏪'
+            default: return '👤'
+        }
+    }
 
     useEffect(() => {
         if (user && user.user_id) {
@@ -95,6 +106,15 @@ const Navbar = ({ user, setUser, onLogout }) => {
                         onClick={() => handleNavClick('#about')}
                     >
                         About
+                    </a>
+                </li>
+                <li className="transform transition-all duration-200 hover:scale-110">
+                    <a
+                        href="#leaderboard"
+                        className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg"
+                        onClick={() => handleNavClick('#leaderboard')}
+                    >
+                        🏆 Leaderboard
                     </a>
                 </li>
                 <li
@@ -317,10 +337,14 @@ const Navbar = ({ user, setUser, onLogout }) => {
                             {/* Profile Link */}
                             <a
                                 href="#profile"
-                                className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg flex items-center"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg flex items-center gap-2"
                                 onClick={() => handleNavClick('#profile')}
                             >
-                                <span className="mr-1">👤</span>
+                                <ProfileImage 
+                                    imageUrl={user?.image_url} 
+                                    size="w-8 h-8" 
+                                    fallbackIcon={getRoleIcon()} 
+                                />
                                 Profile
                             </a>
 

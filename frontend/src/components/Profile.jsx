@@ -1,9 +1,11 @@
 /* filepath: d:\BloodBank\frontend\src\components\Profile.jsx */
 import React, { useState, useEffect } from 'react'
+import ProfileImageUpload from './ProfileImageUpload'
+import ProfileImage from './ProfileImage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const Profile = ({ user }) => {
+const Profile = ({ user, setUser }) => {
     const [profileData, setProfileData] = useState(null)
     const [editMode, setEditMode] = useState(false)
     const [form, setForm] = useState({})
@@ -13,8 +15,30 @@ const Profile = ({ user }) => {
     useEffect(() => {
         if (user) {
             fetchProfileData()
+            fetchUserImage()
         }
     }, [user])
+
+    const fetchUserImage = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('bloodbank_auth_token')}`
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                if (userData.success && userData.user.image_url !== user.image_url) {
+                    if (setUser && typeof setUser === 'function') {
+                        setUser({ ...user, image_url: userData.user.image_url });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch user image:', error);
+        }
+    }
 
     const fetchProfileData = async () => {
         setLoading(true)
@@ -163,10 +187,12 @@ const Profile = ({ user }) => {
                         <div className="glass-effect rounded-2xl p-8 animate-fadeInUp">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center">
-                                    <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center text-2xl mr-4">
-                                        {getRoleIcon()}
-                                    </div>
-                                    <div>
+                                    <ProfileImage
+                                        imageUrl={user.image_url}
+                                        size="w-16 h-16"
+                                        fallbackIcon={getRoleIcon()}
+                                    />
+                                    <div className="ml-4">
                                         <h3 className="text-2xl font-bold text-white">{profileData.name}</h3>
                                         <p className="text-red-400 font-semibold capitalize">{user.role}</p>
                                     </div>
@@ -192,8 +218,26 @@ const Profile = ({ user }) => {
                             </div>
                         </div>
 
-                        {/* Editable Information */}
+                        {/* Profile Image Section - Always Editable */}
                         <div className="glass-effect rounded-2xl p-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                            <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center">
+                                <span className="mr-2">�</span>
+                                Profile Picture
+                            </h3>
+                            <div className="bg-gray-900/50 rounded-xl p-6">
+                                <ProfileImageUpload
+                                    currentImageUrl={user.image_url}
+                                    onImageUpdate={(newImageUrl) => {
+                                        if (setUser && typeof setUser === 'function') {
+                                            setUser({ ...user, image_url: newImageUrl });
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Profile Information Section */}
+                        <div className="glass-effect rounded-2xl p-8 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
                             <h3 className="text-xl font-bold text-red-400 mb-6 flex items-center">
                                 <span className="mr-2">📝</span>
                                 {editMode ? 'Edit Information' : 'Profile Information'}
@@ -267,8 +311,8 @@ const Profile = ({ user }) => {
 
                                     {status && (
                                         <div className={`p-4 rounded-xl text-center font-semibold ${status.includes('✅')
-                                                ? 'bg-green-500/20 border border-green-500/50 text-green-400'
-                                                : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                                            ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                                            : 'bg-red-500/20 border border-red-500/50 text-red-400'
                                             }`}>
                                             {status}
                                         </div>
@@ -341,8 +385,8 @@ const Profile = ({ user }) => {
 
                                     {status && (
                                         <div className={`p-4 rounded-xl text-center font-semibold ${status.includes('✅')
-                                                ? 'bg-green-500/20 border border-green-500/50 text-green-400'
-                                                : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                                            ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                                            : 'bg-red-500/20 border border-red-500/50 text-red-400'
                                             }`}>
                                             {status}
                                         </div>
@@ -353,13 +397,13 @@ const Profile = ({ user }) => {
 
                         {/* Role-specific additional info */}
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
+                            <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
                                 <div className="text-3xl mb-3">🔒</div>
                                 <h3 className="text-lg font-bold text-red-400 mb-2">Account Security</h3>
                                 <p className="text-gray-300 text-sm">Your account is protected with secure authentication</p>
                             </div>
 
-                            <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.5s' }}>
+                            <div className="glass-effect rounded-xl p-6 text-center animate-fadeInUp" style={{ animationDelay: '0.6s' }}>
                                 <div className="text-3xl mb-3">📊</div>
                                 <h3 className="text-lg font-bold text-red-400 mb-2">Profile Status</h3>
                                 <p className="text-gray-300 text-sm">

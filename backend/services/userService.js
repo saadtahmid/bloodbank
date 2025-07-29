@@ -738,6 +738,56 @@ export async function getSystemStats() {
     }
 }
 
+// Get donor leaderboard with rankings and badges
+export async function getDonorLeaderboard() {
+    try {
+        const result = await sql`
+            SELECT 
+                d.donor_id,
+                d.name,
+                u.image_url,
+                COUNT(don.donation_id) as total_donations,
+                RANK() OVER (ORDER BY COUNT(don.donation_id) DESC) as rank
+            FROM bloodbank.donors d
+            INNER JOIN bloodbank.users u ON d.user_id = u.user_id
+            LEFT JOIN bloodbank.donation don ON d.donor_id = don.donor_id
+            GROUP BY d.donor_id, d.name, u.image_url
+            ORDER BY total_donations DESC, d.name ASC
+        `
+
+        // Add badges based on donation count
+        const leaderboard = result.map(donor => {
+            let badge = null
+            let badgeColor = null
+            
+            if (donor.total_donations >= 5) {
+                badge = '🥇'
+                badgeColor = 'golden'
+            } else if (donor.total_donations >= 3) {
+                badge = '🥈'
+                badgeColor = 'silver'
+            } else if (donor.total_donations >= 1) {
+                badge = '🥉'
+                badgeColor = 'bronze'
+            }
+
+            return {
+                ...donor,
+                total_donations: parseInt(donor.total_donations),
+                rank: parseInt(donor.rank),
+                badge,
+                badgeColor
+            }
+        })
+
+        console.log('Donor leaderboard:', leaderboard)
+        return leaderboard
+    } catch (error) {
+        console.error('Error fetching donor leaderboard:', error)
+        throw error
+    }
+}
+
 
 
 

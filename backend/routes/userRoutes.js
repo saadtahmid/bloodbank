@@ -33,7 +33,8 @@ import {
     getBloodBankById,
     updateDonorProfile,
     updateHospitalProfile,
-    updateBloodBankProfile
+    updateBloodBankProfile,
+    getDonorLeaderboard
 } from '../services/userService.js'
 
 const router = Router()
@@ -559,6 +560,24 @@ router.post('/notifications/seen/:notification_id', async (req, res) => {
         res.json({ success: true })
     } catch (err) {
         res.status(500).json({ error: 'Failed to mark notification as seen' })
+    }
+})
+
+// Get donor leaderboard
+router.get('/donor-leaderboard', async (req, res) => {
+    try {
+        console.log('Fetching donor leaderboard...')
+        const leaderboard = await getDonorLeaderboard()
+        res.json({
+            success: true,
+            leaderboard
+        })
+    } catch (error) {
+        console.error('Leaderboard error:', error)
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to fetch donor leaderboard' 
+        })
     }
 })
 
