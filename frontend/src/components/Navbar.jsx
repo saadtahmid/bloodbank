@@ -189,6 +189,15 @@ const Navbar = ({ user, setUser, onLogout }) => {
                             <ul className="absolute left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                                 <li>
                                     <a
+                                        href="#bloodbank-dashboard"
+                                        className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
+                                        onClick={() => handleNavClick('#bloodbank-dashboard')}
+                                    >
+                                        📊 Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
                                         href="#blood-inventory"
                                         className="block px-4 py-3 text-white hover:bg-red-500/20 hover:text-red-400 transition-all duration-200 rounded-lg"
                                         onClick={() => handleNavClick('#blood-inventory')}

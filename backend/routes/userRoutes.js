@@ -36,7 +36,8 @@ import {
     updateBloodBankProfile,
     getDonorLeaderboard,
     getHospitalAnalytics,
-    getHospitalRecommendations
+    getHospitalRecommendations,
+    getBloodBankAnalytics
 } from '../services/userService.js'
 
 const router = Router()
@@ -674,6 +675,18 @@ router.get('/hospital/:hospital_id/recommendations', async (req, res) => {
             success: false,
             error: 'Failed to fetch hospital recommendations'
         })
+    }
+})
+
+// Blood bank analytics
+router.get('/bloodbank/:bloodbank_id/analytics', async (req, res) => {
+    try {
+        const { bloodbank_id } = req.params
+        const analytics = await getBloodBankAnalytics(bloodbank_id)
+        res.json({ success: true, analytics })
+    } catch (error) {
+        console.error('Blood bank analytics error:', error)
+        res.status(500).json({ success: false, error: 'Failed to fetch analytics' })
     }
 })
 
