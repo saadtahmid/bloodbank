@@ -1,41 +1,40 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-
-// Simplified context for testing
-const simpleContext = {
-    bloodDonationKnowledge: "Blood donation helps save lives. You must be 18-65 years old and weigh at least 50kg.",
-    siteFeatures: "This system helps donors find blood camps and hospitals request blood.",
-    navigationHelp: "Navigate using the menus at the top of the page.",
-    emergencyInfo: "For emergencies, call 999."
-}
+import { bloodDonationKnowledge, siteFeatures, navigationHelp, emergencyInfo } from '../data/chatbotContext.js'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
-// Fallback responses for when Gemini API is not available
+// Enhanced fallback responses using comprehensive knowledge base
 const fallbackResponses = {
-    greeting: "Hello! I'm your Blood Bank Assistant. I can help you with blood donation information, navigating our website, and understanding our services.",
+    greeting: "Hello! I'm your Blood Bank Assistant. I can help you with blood donation information, navigating our website, and understanding our services. Ask me about donation eligibility, how to use site features, blood types, or emergency procedures.",
 
-    donation: "To donate blood, you must be 18-65 years old, weigh at least 50kg, and be in good health. You can donate every 56 days. Visit our blood camps or contact local blood banks to schedule a donation.",
+    donation: "To donate blood, you must be 18-65 years old, weigh at least 50kg, and be in good health. You need minimum hemoglobin of 12.5 g/dL (women) or 13.0 g/dL (men). Wait 56 days between donations. The process takes 45-60 minutes total including registration, mini-physical, donation (8-12 min), and rest.",
 
-    eligibility: "Blood donation eligibility requires: Age 18-65, minimum weight 50kg, good health, no recent illness/surgery, and 56 days since last donation. Some medications may affect eligibility.",
+    eligibility: "Blood donation eligibility: Age 18-65, minimum weight 50kg, good health, proper hemoglobin levels, 56 days since last donation, no recent illness/surgery. Vegetarians can donate if they meet hemoglobin requirements. You get a free health screening with each donation.",
 
-    navigation: "To navigate our site: Donors can register for camps and view history. Hospitals can request blood. Blood banks manage inventory. Use the top menu to access features based on your role.",
+    navigation: "For Donors: Use 'My Donations' menu to view history, register for camps, check urgent needs. For Hospitals: Hospital menu to create requests, view history, access inventory. For Blood Banks: Use Inventory, Camps, and Requests menus. Emergency contact: 999.",
 
-    bloodTypes: "Blood type compatibility: O- is universal donor, AB+ is universal recipient. A+ can donate to A+/AB+, B+ to B+/AB+, etc. Know your blood type to help efficiently.",
+    bloodTypes: "Blood compatibility: O- is universal donor (can donate to all), AB+ is universal recipient (can receive from all). A+ donates to A+/AB+, B+ to B+/AB+, A- to A+/A-/AB+/AB-, B- to B+/B-/AB+/AB-, AB- receives from A-/B-/AB-/O-, O+ donates to A+/B+/AB+/O+.",
 
-    emergency: "For medical emergencies, call 999 immediately. For urgent blood needs, contact multiple blood banks directly through our directory.",
+    emergency: "Medical emergencies: Call 999 immediately. For urgent blood needs: Contact multiple blood banks simultaneously, use 'Urgent Needs' feature, coordinate with donors of compatible blood types. Keep emergency contact numbers readily available.",
 
-    default: "I'm here to help with blood donation questions, site navigation, and blood bank services. You can ask about donation eligibility, how to use our website, blood types, or emergency procedures."
+    process: "Donation process: 1) Registration & health questionnaire (10-15 min), 2) Mini-physical: pulse, blood pressure, temperature, hemoglobin check, 3) Actual donation (8-12 min), 4) Rest & refreshments (10-15 min). Prepare by eating iron-rich foods, staying hydrated, and getting good sleep.",
+
+    benefits: "Health benefits of donating: Free health screening, reduces heart disease risk, burns ~650 calories per donation, maintains healthy iron levels, psychological benefits of saving lives. After donation: rest 10-15 min, drink fluids, avoid heavy lifting for 24 hours.",
+
+    default: "I'm here to help with blood donation questions, site navigation, and blood bank services. You can ask about donation eligibility, blood type compatibility, how to use website features, donation process, health benefits, or emergency procedures. For medical emergencies, call 999."
 }
 
 function getKeywords(message) {
     const msg = message.toLowerCase()
 
     if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) return 'greeting'
-    if (msg.includes('donate') || msg.includes('donation')) return 'donation'
-    if (msg.includes('eligible') || msg.includes('qualify') || msg.includes('can i')) return 'eligibility'
-    if (msg.includes('navigate') || msg.includes('how to') || msg.includes('menu') || msg.includes('use')) return 'navigation'
-    if (msg.includes('blood type') || msg.includes('compatibility') || msg.includes('universal')) return 'bloodTypes'
-    if (msg.includes('emergency') || msg.includes('urgent') || msg.includes('999')) return 'emergency'
+    if (msg.includes('donate') || msg.includes('donation') || msg.includes('give blood')) return 'donation'
+    if (msg.includes('eligible') || msg.includes('qualify') || msg.includes('can i') || msg.includes('requirements')) return 'eligibility'
+    if (msg.includes('navigate') || msg.includes('how to') || msg.includes('menu') || msg.includes('use') || msg.includes('find')) return 'navigation'
+    if (msg.includes('blood type') || msg.includes('compatibility') || msg.includes('universal') || msg.includes('o-') || msg.includes('ab+')) return 'bloodTypes'
+    if (msg.includes('emergency') || msg.includes('urgent') || msg.includes('999') || msg.includes('critical')) return 'emergency'
+    if (msg.includes('process') || msg.includes('procedure') || msg.includes('steps') || msg.includes('how long')) return 'process'
+    if (msg.includes('benefits') || msg.includes('health') || msg.includes('advantages') || msg.includes('why donate')) return 'benefits'
 
     return 'default'
 }
@@ -50,12 +49,21 @@ export async function getChatbotResponse(message, userContext = {}) {
         try {
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
-            const systemPrompt = `You are a helpful assistant for a Blood Bank Management System. Help with blood donation, site navigation, and general information.
+            const systemPrompt = `You are a knowledgeable assistant for a Blood Bank Management System. Use the following comprehensive information to help users:
 
-User Role: ${userContext.role || 'Guest'}
+${bloodDonationKnowledge}
+
+${siteFeatures}
+
+${navigationHelp}
+
+${emergencyInfo}
+
+
+User Context: ${JSON.stringify(userContext)}
 User Question: ${message}
 
-Provide a helpful, friendly response about blood donation or site features. Keep it concise and accurate.`
+Based on the above knowledge base, provide a helpful, accurate, and friendly response. Be specific and reference the relevant information from the knowledge base when appropriate. Keep responses concise but informative.`
 
             console.log('Sending request to Gemini API...')
             const result = await model.generateContent(systemPrompt)
@@ -75,11 +83,11 @@ Provide a helpful, friendly response about blood donation or site features. Keep
             let response = fallbackResponses[keywords]
 
             // Add role-specific context
-            if (userContext.role === 'DONOR') {
+            if (userContext.role === 'Donor') {
                 response += "\n\nAs a donor, you can register for blood camps, view your donation history, and check urgent blood needs through your dashboard."
-            } else if (userContext.role === 'HOSPITAL') {
+            } else if (userContext.role === 'Hospital') {
                 response += "\n\nAs a hospital, you can create blood requests, view request history, and contact blood banks directly through our system."
-            } else if (userContext.role === 'BLOODBANK') {
+            } else if (userContext.role === 'BloodBank') {
                 response += "\n\nAs a blood bank administrator, you can manage inventory, create camps, handle requests, and coordinate transfers with other blood banks."
             }
 
@@ -112,7 +120,7 @@ export async function getUserContext(user) {
         }
 
         // Get role-specific information
-        if (user.role === 'DONOR' && user.donor_id) {
+        if (user.role === 'Donor' && user.donor_id) {
             try {
                 const donorResult = await sql`
                     SELECT d.last_donation_date, d.location, d.blood_type,
@@ -141,7 +149,7 @@ export async function getUserContext(user) {
             } catch (err) {
                 console.error('Error fetching donor context:', err)
             }
-        } else if (user.role === 'HOSPITAL' && user.hospital_id) {
+        } else if (user.role === 'Hospital' && user.hospital_id) {
             try {
                 const hospitalResult = await sql`
                     SELECT name, location 
@@ -155,7 +163,7 @@ export async function getUserContext(user) {
             } catch (err) {
                 console.error('Error fetching hospital context:', err)
             }
-        } else if (user.role === 'BLOODBANK' && user.bloodbank_id) {
+        } else if (user.role === 'BloodBank' && user.bloodbank_id) {
             try {
                 const bloodbankResult = await sql`
                     SELECT name, location 

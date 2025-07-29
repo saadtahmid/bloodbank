@@ -12,7 +12,7 @@ router.post('/test', async (req, res) => {
 })
 
 // Main chat endpoint
-router.post('/chat', async (req, res) => {
+router.post('/chat', optionalAuth, async (req, res) => {
     console.log('=== CHAT ENDPOINT HIT ===')
     console.log('Chat endpoint hit with body:', req.body)
     try {
@@ -28,8 +28,15 @@ router.post('/chat', async (req, res) => {
 
         console.log('Processing message:', message)
 
-        // Get user context (simplified)
-        const userContext = { role: 'Guest' }
+        // Get user context from authenticated user or default to Guest
+        let userContext = { role: 'Guest' }
+
+        if (req.user) {
+            console.log('Authenticated user found:', req.user)
+            userContext = await getUserContext(req.user)
+        } else {
+            console.log('No authenticated user, using Guest context')
+        }
 
         console.log('User context:', userContext)
 
