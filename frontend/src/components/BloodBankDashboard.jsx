@@ -281,9 +281,9 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                 <div key={hospital.hospital_id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl">
                                     <div className="flex items-center">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                                index === 1 ? 'bg-gray-500/20 text-gray-400' :
-                                                    index === 2 ? 'bg-orange-500/20 text-orange-400' :
-                                                        'bg-gray-600/20 text-gray-300'
+                                            index === 1 ? 'bg-gray-500/20 text-gray-400' :
+                                                index === 2 ? 'bg-orange-500/20 text-orange-400' :
+                                                    'bg-gray-600/20 text-gray-300'
                                             }`}>
                                             {index + 1}
                                         </div>
@@ -307,12 +307,23 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                             <Activity className="mr-2 h-6 w-6" />
                             Performance Metrics
                         </h2>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={analytics.performanceMetrics}>
+
+                        
+                        
+                        {/* Radial Chart with Labels */}
+                        <ResponsiveContainer width="100%" height={200}>
+                            <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" data={analytics.performanceMetrics}>
                                 <RadialBar
                                     dataKey="value"
-                                    cornerRadius={10}
-                                    fill="#8884d8"
+                                    cornerRadius={5}
+                                    label={{ position: 'insideStart', fill: '#fff', fontSize: 12 }}
+                                />
+                                <Legend
+                                    iconType="circle"
+                                    layout="horizontal"
+                                    align="center"
+                                    verticalAlign="bottom"
+                                    wrapperStyle={{ color: '#F9FAFB', fontSize: '12px' }}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -321,6 +332,7 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                         borderRadius: '8px',
                                         color: '#F9FAFB'
                                     }}
+                                    formatter={(value, name) => [`${value}%`, name]}
                                 />
                             </RadialBarChart>
                         </ResponsiveContainer>
@@ -351,9 +363,9 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${activity.type === 'donation' ? 'bg-green-500/20 text-green-400' :
-                                                    activity.type === 'request' ? 'bg-blue-500/20 text-blue-400' :
-                                                        activity.type === 'emergency' ? 'bg-red-500/20 text-red-400' :
-                                                            'bg-gray-500/20 text-gray-400'
+                                                activity.type === 'request' ? 'bg-blue-500/20 text-blue-400' :
+                                                    activity.type === 'emergency' ? 'bg-red-500/20 text-red-400' :
+                                                        'bg-gray-500/20 text-gray-400'
                                                 }`}>
                                                 {activity.type}
                                             </span>
@@ -363,8 +375,8 @@ const BloodBankDashboard = ({ bloodbank_id }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                                    activity.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                        'bg-red-500/20 text-red-400'
+                                                activity.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                    'bg-red-500/20 text-red-400'
                                                 }`}>
                                                 {activity.status}
                                             </span>

@@ -1233,6 +1233,20 @@ export async function getBloodBankAnalytics(bloodbank_id) {
             LIMIT 10
         `
 
+        // Blood Type Coverage - Percentage of blood types that have available stock
+        const bloodTypeCoverageQuery = await sql`
+            SELECT 
+                COUNT(DISTINCT blood_type) as types_in_stock
+            FROM bloodbank.bloodunit 
+            WHERE bloodbank_id = ${bloodbank_id} 
+                AND status = 'AVAILABLE' 
+                AND units > 0
+        `
+
+        const totalBloodTypes = 8 // A+, A-, B+, B-, AB+, AB-, O+, O-
+        const typesInStock = parseInt(bloodTypeCoverageQuery[0].types_in_stock) || 0
+        const bloodTypeCoverage = ((typesInStock / totalBloodTypes) * 100).toFixed(1)
+
         // Calculate performance metrics
         const fulfillmentRate = fulfillmentStats[0].total_requests > 0
             ? (fulfillmentStats[0].fulfilled_requests / fulfillmentStats[0].total_requests * 100).toFixed(1)
@@ -1245,8 +1259,7 @@ export async function getBloodBankAnalytics(bloodbank_id) {
         const performanceMetrics = [
             { name: 'Fulfillment Rate', value: parseFloat(fulfillmentRate), fill: '#10B981' },
             { name: 'Emergency Response', value: parseFloat(emergencyResponseRate), fill: '#EF4444' },
-            { name: 'Stock Efficiency', value: 85, fill: '#3B82F6' }, // Calculate based on turnover
-            { name: 'Donor Retention', value: 78, fill: '#8B5CF6' } // Calculate based on repeat donors
+            { name: 'Blood Type Coverage', value: parseFloat(bloodTypeCoverage), fill: '#3B82F6' },
         ]
 
         return {
