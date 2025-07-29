@@ -155,7 +155,7 @@ export async function registerUserWithRole(email, password, role, details) {
 export async function findUserByEmail(email, password) {
     // First, get the user from Users table
     const userResult = await sql`
-        SELECT user_id, email, password, role
+        SELECT user_id, email, password, role, image_url
         FROM bloodbank.Users
         WHERE email = ${email}
         LIMIT 1
