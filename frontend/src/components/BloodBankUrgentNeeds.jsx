@@ -111,10 +111,7 @@ const BloodBankUrgentNeeds = ({ bloodbank_id }) => {
                                         <label className="text-sm text-gray-400">Blood Type</label>
                                         <div className="text-red-400 font-bold text-lg">{need.blood_type}</div>
                                     </div>
-                                    <div className="bg-gray-900/50 rounded-xl p-4">
-                                        <label className="text-sm text-gray-400">Units Needed</label>
-                                        <div className="text-white font-semibold text-lg">{need.units_needed}</div>
-                                    </div>
+                                    
                                     <div className="bg-gray-900/50 rounded-xl p-4">
                                         <label className="text-sm text-gray-400">Status</label>
                                         <div className="text-yellow-400 font-semibold">OPEN</div>
@@ -151,10 +148,7 @@ const BloodBankUrgentNeeds = ({ bloodbank_id }) => {
                                 <label className="text-sm text-gray-400">Blood Type Required</label>
                                 <div className="text-red-400 font-bold text-lg">{selectedNeed.blood_type}</div>
                             </div>
-                            <div className="bg-gray-900/50 rounded-xl p-4">
-                                <label className="text-sm text-gray-400">Units Needed</label>
-                                <div className="text-white font-semibold text-lg">{selectedNeed.units_needed}</div>
-                            </div>
+                            
                         </div>
 
                         <div className="space-y-4">

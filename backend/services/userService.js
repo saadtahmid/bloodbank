@@ -368,14 +368,50 @@ export async function addDonationForRegistration({ donor_id, bloodbank_id, camp_
     return { success: true, donation_id }
 }
 
-export async function createBloodRequest({ hospital_id, blood_type, units_requested, requested_to }) {
+// Updated createBloodRequest function
+export async function createBloodRequest({
+    hospital_id,
+    blood_type,
+    units_requested,
+    requested_to,
+    priority = 'NORMAL',
+    required_by = null,
+    patient_condition = null,
+    broadcast_to_multiple = false,
+    broadcast_group_id = null
+}) {
     const result = await sql`
-        INSERT INTO bloodbank.BloodRequest (hospital_id, blood_type, units_requested, requested_to)
-        VALUES (${hospital_id}, ${blood_type}, ${units_requested}, ${requested_to})
-        RETURNING request_id
+        INSERT INTO bloodbank.bloodrequest (
+            hospital_id, 
+            blood_type, 
+            units_requested, 
+            requested_to, 
+            priority, 
+            required_by, 
+            patient_condition, 
+            broadcast_to_multiple,
+            broadcast_group_id
+        )
+        VALUES (
+            ${hospital_id}, 
+            ${blood_type}, 
+            ${units_requested}, 
+            ${requested_to}, 
+            ${priority}, 
+            ${required_by}, 
+            ${patient_condition}, 
+            ${broadcast_to_multiple},
+            ${broadcast_group_id}
+        )
+        RETURNING request_id, broadcast_group_id
     `
+
     if (result.length > 0) {
-        return { success: true, request_id: result[0].request_id }
+        return {
+            success: true,
+            request_id: result[0].request_id,
+            broadcast_group_id: result[0].broadcast_group_id
+        }
     }
     return { success: false, error: 'Failed to create blood request' }
 }
@@ -383,7 +419,7 @@ export async function createBloodRequest({ hospital_id, blood_type, units_reques
 export async function getBloodRequestsForBank(bloodbank_id) {
     const result = await sql`
         SELECT r.*, h.name as hospital_name
-        FROM bloodbank.BloodRequest r
+        FROM bloodbank.bloodrequest r
         JOIN bloodbank.Hospital h ON r.hospital_id = h.hospital_id
         WHERE r.requested_to = ${bloodbank_id}
         ORDER BY r.request_date DESC
@@ -391,6 +427,7 @@ export async function getBloodRequestsForBank(bloodbank_id) {
     return result.map(r => ({
         ...r,
         request_date: r.request_date ? r.request_date.toISOString().slice(0, 10) : null,
+        required_by: r.required_by ? r.required_by.toISOString() : null,
     }))
 }
 
@@ -410,39 +447,86 @@ export async function getAvailableBloodUnitsForBank(bloodbank_id) {
 
 export async function fulfillBloodRequest(request_id) {
     try {
-        // Get request details
-        const req = await sql`
-            SELECT * FROM bloodbank.BloodRequest WHERE request_id = ${request_id}
-        `
-        if (!req[0]) return { success: false, error: 'Request not found' }
+        // Start a transaction to ensure all operations are atomic
+        return await sql.begin(async (tx) => {
+            // Get request details
+            const req = await tx`
+                SELECT * FROM bloodbank.bloodrequest WHERE request_id = ${request_id}
+            `
+            if (!req[0]) {
+                throw new Error('Request not found')
+            }
 
-        const { blood_type, units_requested, requested_to } = req[0]
+            const { blood_type, units_requested, requested_to, broadcast_group_id, broadcast_to_multiple } = req[0]
 
-        // Use consistent fulfillment service
-        const consumption = await FulfillmentService.consumeUnits(
-            requested_to,
-            blood_type,
-            units_requested,
-            request_id
-        )
+            // Check if this broadcast group is already fulfilled BEFORE consuming units
+            if (broadcast_to_multiple && broadcast_group_id) {
+                const groupStatus = await tx`
+                    SELECT COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_requests
+                    FROM bloodbank.bloodrequest 
+                    WHERE broadcast_group_id = ${broadcast_group_id}
+                `
 
-        if (!consumption.success) {
-            return { success: false, error: consumption.error }
-        }
+                if (groupStatus[0].fulfilled_requests > 0) {
+                    throw new Error('This broadcast request has already been fulfilled by another blood bank')
+                }
+            }
 
-        // Update request status
-        await sql`
-            UPDATE bloodbank.BloodRequest
-            SET status = 'FULFILLED'
-            WHERE request_id = ${request_id}
-        `
+            // Get available units (FIFO - oldest first) within the transaction
+            const availableUnits = await tx`
+                SELECT unit_id, collected_date, expiry_date 
+                FROM bloodbank.BloodUnit 
+                WHERE bloodbank_id = ${requested_to} 
+                AND blood_type = ${blood_type} 
+                AND status = 'AVAILABLE'
+                ORDER BY expiry_date ASC, collected_date ASC
+                LIMIT ${units_requested}
+            `
 
-        return { success: true, consumed_units: consumption.consumed_units }
+            if (availableUnits.length < units_requested) {
+                throw new Error(`Only ${availableUnits.length} units available, need ${units_requested}`)
+            }
+
+            const unitIds = availableUnits.map(u => u.unit_id)
+
+            // Mark units as used within the transaction
+            await tx`
+                UPDATE bloodbank.BloodUnit 
+                SET status = 'USED'
+                WHERE unit_id = ANY(${unitIds})
+            `
+
+            // Update request as fulfilled
+            await tx`
+                UPDATE bloodbank.bloodrequest
+                SET status = 'FULFILLED'
+                WHERE request_id = ${request_id}
+            `
+
+            // If this is a broadcast request, reject all other requests in the group
+            if (broadcast_to_multiple && broadcast_group_id) {
+                await tx`
+                    UPDATE bloodbank.bloodrequest
+                    SET status = 'REJECTED'
+                    WHERE broadcast_group_id = ${broadcast_group_id}
+                    AND request_id != ${request_id}
+                    AND status = 'PENDING'
+                `
+            }
+
+            return {
+                success: true,
+                consumed_units: availableUnits,
+                broadcast_cancelled: broadcast_to_multiple ? true : false
+            }
+        })
     } catch (err) {
         console.error('Fulfill blood request error:', err)
-        return { success: false, error: 'Failed to fulfill request' }
+        return { success: false, error: err.message || 'Failed to fulfill request' }
     }
 }
+
+
 
 export async function getDonorById(donor_id) {
     const result = await sql`
@@ -509,10 +593,14 @@ export async function getBloodRequestHistoryForHospital(hospital_id) {
                 r.units_requested,
                 r.status,
                 r.request_date,
+                r.priority,
+                r.required_by,
+                r.patient_condition,
+                r.broadcast_to_multiple,
                 bb.name as bloodbank_name,
                 bb.location as bloodbank_location,
                 bb.contact_number as bloodbank_phone
-            FROM bloodbank.BloodRequest r
+            FROM bloodbank.bloodrequest r
             LEFT JOIN bloodbank.BloodBank bb ON r.requested_to = bb.bloodbank_id
             WHERE r.hospital_id = ${hospital_id}
             ORDER BY r.request_date DESC
@@ -521,6 +609,7 @@ export async function getBloodRequestHistoryForHospital(hospital_id) {
         return result.map(r => ({
             ...r,
             request_date: r.request_date ? r.request_date.toISOString().slice(0, 10) : null,
+            required_by: r.required_by ? r.required_by.toISOString() : null,
         }))
     } catch (err) {
         console.error('Get blood request history error:', err)
@@ -759,7 +848,7 @@ export async function getDonorLeaderboard() {
         const leaderboard = result.map(donor => {
             let badge = null
             let badgeColor = null
-            
+
             if (donor.total_donations >= 5) {
                 badge = '🥇'
                 badgeColor = 'golden'
@@ -785,6 +874,231 @@ export async function getDonorLeaderboard() {
     } catch (error) {
         console.error('Error fetching donor leaderboard:', error)
         throw error
+    }
+}
+
+// Get hospital analytics for dashboard
+export async function getHospitalAnalytics(hospital_id) {
+    try {
+        // Blood request success rates
+        const successRateResult = await sql`
+            SELECT 
+                COUNT(*) as total_requests,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_requests,
+                COUNT(CASE WHEN priority = 'EMERGENCY' THEN 1 END) as emergency_requests,
+                COUNT(CASE WHEN status = 'FULFILLED' AND priority = 'EMERGENCY' THEN 1 END) as emergency_fulfilled
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+        `
+
+        const stats = successRateResult[0]
+        const totalRequests = parseInt(stats.total_requests) || 0
+        const fulfilledRequests = parseInt(stats.fulfilled_requests) || 0
+        const emergencyRequests = parseInt(stats.emergency_requests) || 0
+        const emergencyFulfilled = parseInt(stats.emergency_fulfilled) || 0
+
+        const successRate = totalRequests > 0 ? (fulfilledRequests / totalRequests * 100).toFixed(1) : 0
+        const emergencySuccessRate = emergencyRequests > 0 ? (emergencyFulfilled / emergencyRequests * 100).toFixed(1) : 0
+
+        // Monthly usage statistics (last 12 months)
+        const monthlyStatsResult = await sql`
+            SELECT 
+                DATE_TRUNC('month', request_date) as month,
+                COUNT(*) as total_requests,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_requests,
+                SUM(units_requested) as total_units_requested,
+                SUM(CASE WHEN status = 'FULFILLED' THEN units_requested ELSE 0 END) as total_units_received
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id} 
+                AND request_date >= CURRENT_DATE - INTERVAL '12 months'
+            GROUP BY DATE_TRUNC('month', request_date)
+            ORDER BY month DESC
+        `
+
+        // Blood type demand patterns
+        const demandPatternsResult = await sql`
+            SELECT 
+                blood_type,
+                COUNT(*) as request_count,
+                SUM(units_requested) as total_units_requested,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_count,
+                SUM(CASE WHEN status = 'FULFILLED' THEN units_requested ELSE 0 END) as fulfilled_units
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+                AND request_date >= CURRENT_DATE - INTERVAL '6 months'
+            GROUP BY blood_type
+            ORDER BY total_units_requested DESC
+        `
+
+        // Emergency request tracking (last 30 days)
+        const emergencyTrackingResult = await sql`
+            SELECT 
+                request_id,
+                blood_type,
+                units_requested,
+                priority,
+                status,
+                request_date,
+                required_by,
+                patient_condition
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id} 
+                AND priority = 'EMERGENCY'
+                AND request_date >= CURRENT_DATE - INTERVAL '30 days'
+            ORDER BY request_date DESC
+            LIMIT 10
+        `
+
+        // Yearly comparison
+        const currentYear = new Date().getFullYear()
+        const yearlyComparisonResult = await sql`
+            SELECT 
+                EXTRACT(YEAR FROM request_date) as year,
+                COUNT(*) as total_requests,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_requests,
+                SUM(units_requested) as total_units_requested
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+                AND EXTRACT(YEAR FROM request_date) IN (${currentYear}, ${currentYear - 1})
+            GROUP BY EXTRACT(YEAR FROM request_date)
+            ORDER BY year DESC
+        `
+
+        return {
+            successRates: {
+                overall: parseFloat(successRate),
+                emergency: parseFloat(emergencySuccessRate),
+                totalRequests,
+                fulfilledRequests,
+                emergencyRequests,
+                emergencyFulfilled
+            },
+            monthlyStats: monthlyStatsResult.map(stat => ({
+                month: stat.month,
+                totalRequests: parseInt(stat.total_requests),
+                fulfilledRequests: parseInt(stat.fulfilled_requests),
+                totalUnitsRequested: parseInt(stat.total_units_requested) || 0,
+                totalUnitsReceived: parseInt(stat.total_units_received) || 0,
+                successRate: stat.total_requests > 0 ?
+                    (stat.fulfilled_requests / stat.total_requests * 100).toFixed(1) : 0
+            })),
+            demandPatterns: demandPatternsResult.map(pattern => ({
+                bloodType: pattern.blood_type,
+                requestCount: parseInt(pattern.request_count),
+                totalUnitsRequested: parseInt(pattern.total_units_requested) || 0,
+                fulfilledCount: parseInt(pattern.fulfilled_count),
+                fulfilledUnits: parseInt(pattern.fulfilled_units) || 0,
+                fulfillmentRate: pattern.request_count > 0 ?
+                    (pattern.fulfilled_count / pattern.request_count * 100).toFixed(1) : 0
+            })),
+            emergencyTracking: emergencyTrackingResult.map(emergency => ({
+                ...emergency,
+                request_date: emergency.request_date ? emergency.request_date.toISOString().slice(0, 10) : null,
+                required_by: emergency.required_by ? emergency.required_by.toISOString() : null
+            })),
+            yearlyComparison: yearlyComparisonResult.map(year => ({
+                year: parseInt(year.year),
+                totalRequests: parseInt(year.total_requests),
+                fulfilledRequests: parseInt(year.fulfilled_requests),
+                totalUnitsRequested: parseInt(year.total_units_requested) || 0,
+                successRate: year.total_requests > 0 ?
+                    (year.fulfilled_requests / year.total_requests * 100).toFixed(1) : 0
+            }))
+        }
+    } catch (error) {
+        console.error('Error fetching hospital analytics:', error)
+        throw error
+    }
+}
+
+// Get hospital dashboard recommendations
+export async function getHospitalRecommendations(hospital_id) {
+    try {
+        const recommendations = []
+
+        // Check for low success rate blood types
+        const lowSuccessRateResult = await sql`
+            SELECT 
+                blood_type,
+                COUNT(*) as total_requests,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as fulfilled_requests
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+                AND request_date >= CURRENT_DATE - INTERVAL '3 months'
+            GROUP BY blood_type
+            HAVING COUNT(*) >= 3 AND 
+                   (COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END)::float / COUNT(*)::float) < 0.7
+        `
+
+        lowSuccessRateResult.forEach(result => {
+            const successRate = (result.fulfilled_requests / result.total_requests * 100).toFixed(1)
+            recommendations.push({
+                type: 'warning',
+                title: `Low Success Rate for ${result.blood_type}`,
+                description: `Only ${successRate}% of ${result.blood_type} requests were fulfilled in the last 3 months. Consider reaching out to multiple blood banks.`,
+                actionable: true
+            })
+        })
+
+        // Check for frequently requested blood types
+        const frequentRequestsResult = await sql`
+            SELECT 
+                blood_type,
+                COUNT(*) as request_count
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+                AND request_date >= CURRENT_DATE - INTERVAL '1 month'
+            GROUP BY blood_type
+            ORDER BY request_count DESC
+            LIMIT 1
+        `
+
+        if (frequentRequestsResult.length > 0) {
+            const mostRequested = frequentRequestsResult[0]
+            recommendations.push({
+                type: 'info',
+                title: `Most Requested: ${mostRequested.blood_type}`,
+                description: `${mostRequested.blood_type} has been your most requested blood type this month (${mostRequested.request_count} requests). Consider establishing partnerships with blood banks that have good ${mostRequested.blood_type} availability.`,
+                actionable: true
+            })
+        }
+
+        // Check emergency response time
+        const emergencyResponseResult = await sql`
+            SELECT 
+                COUNT(*) as emergency_count,
+                COUNT(CASE WHEN status = 'FULFILLED' THEN 1 END) as emergency_fulfilled
+            FROM bloodbank.bloodrequest 
+            WHERE hospital_id = ${hospital_id}
+                AND priority = 'EMERGENCY'
+                AND request_date >= CURRENT_DATE - INTERVAL '1 month'
+        `
+
+        if (emergencyResponseResult[0] && emergencyResponseResult[0].emergency_count > 0) {
+            const emergencyData = emergencyResponseResult[0]
+            const emergencyRate = (emergencyData.emergency_fulfilled / emergencyData.emergency_count * 100).toFixed(1)
+
+            if (emergencyRate < 90) {
+                recommendations.push({
+                    type: 'urgent',
+                    title: 'Emergency Request Success Rate Needs Improvement',
+                    description: `Your emergency request fulfillment rate is ${emergencyRate}%. Consider setting up emergency blood bank partnerships or maintaining emergency inventory agreements.`,
+                    actionable: true
+                })
+            } else {
+                recommendations.push({
+                    type: 'success',
+                    title: 'Excellent Emergency Response',
+                    description: `Your emergency request fulfillment rate is ${emergencyRate}%. Keep up the excellent emergency preparedness!`,
+                    actionable: false
+                })
+            }
+        }
+
+        return recommendations
+    } catch (error) {
+        console.error('Error fetching hospital recommendations:', error)
+        return []
     }
 }
 

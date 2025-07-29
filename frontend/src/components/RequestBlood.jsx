@@ -7,7 +7,11 @@ const RequestBlood = ({ user }) => {
     const [selectedBloodbanks, setSelectedBloodbanks] = useState([])
     const [form, setForm] = useState({
         blood_type: '',
-        units_requested: ''
+        units_requested: '',
+        priority: 'NORMAL',
+        required_by: '',
+        patient_condition: '',
+        broadcast_to_multiple: false
     })
     const [status, setStatus] = useState('')
     const [loading, setLoading] = useState(false)
@@ -54,14 +58,33 @@ const RequestBlood = ({ user }) => {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
-    const handleBloodBankSelection = (bloodbankId) => {
-        setSelectedBloodbanks(prev => {
-            if (prev.includes(bloodbankId)) {
-                return prev.filter(id => id !== bloodbankId)
+    const getPriorityColor = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return 'border-red-500 bg-red-500/10'
+            case 'URGENT': return 'border-yellow-500 bg-yellow-500/10'
+            default: return 'border-green-500 bg-green-500/10'
+        }
+    }
+
+    const getPriorityBadge = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return '🚨 EMERGENCY REQUEST'
+            case 'URGENT': return '⚡ URGENT REQUEST'
+            default: return '✅ NORMAL REQUEST'
+        }
+    }
+
+    const handleBloodbankSelection = (bloodbankId, isChecked) => {
+        if (isChecked) {
+            // If broadcast_to_multiple is false, only allow one selection
+            if (!form.broadcast_to_multiple) {
+                setSelectedBloodbanks([bloodbankId]) // Replace with single selection
             } else {
-                return [...prev, bloodbankId]
+                setSelectedBloodbanks(prev => [...prev, bloodbankId]) // Add to multiple
             }
-        })
+        } else {
+            setSelectedBloodbanks(prev => prev.filter(id => id !== bloodbankId))
+        }
     }
 
     const selectAllBloodBanks = () => {
@@ -72,47 +95,104 @@ const RequestBlood = ({ user }) => {
         }
     }
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if (selectedBloodbanks.length === 0) {
-            setStatus('❌ Please select at least one blood bank')
+            alert('Please select at least one blood bank')
             return
         }
 
-        setStatus('')
-        setLoading(true)
-
         try {
-            // Send requests to all selected blood banks
-            const promises = selectedBloodbanks.map(bloodbank_id =>
-                fetch(`${API_BASE_URL}/api/blood-requests`, {
+            setLoading(true)
+
+            if (form.broadcast_to_multiple && selectedBloodbanks.length > 1) {
+                // Generate a single broadcast group ID for all requests
+                const broadcastGroupId = crypto.randomUUID()
+
+                console.log(`📢 Broadcasting ${form.priority} request to ${selectedBloodbanks.length} blood banks`)
+
+                // Send to all selected blood banks with the same broadcast_group_id
+                const promises = selectedBloodbanks.map(bloodbank_id =>
+                    fetch(`${API_BASE_URL}/api/blood-requests`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            hospital_id: user.hospital_id,
+                            blood_type: form.blood_type,
+                            units_requested: Number(form.units_requested),
+                            requested_to: Number(bloodbank_id),
+                            priority: form.priority,
+                            required_by: form.required_by || null,
+                            patient_condition: form.patient_condition || null,
+                            broadcast_to_multiple: true,
+                            broadcast_group_id: broadcastGroupId
+                        })
+                    })
+                )
+
+                const responses = await Promise.all(promises)
+                const successCount = responses.filter(r => r.ok).length
+
+                if (successCount > 0) {
+                    alert(`✅ Broadcast request sent to ${successCount} blood banks successfully!`)
+                    resetForm()
+                } else {
+                    alert('❌ Failed to send broadcast request. Please try again.')
+                }
+            } else {
+                // Single request
+                const response = await fetch(`${API_BASE_URL}/api/blood-requests`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         hospital_id: user.hospital_id,
                         blood_type: form.blood_type,
                         units_requested: Number(form.units_requested),
-                        requested_to: Number(bloodbank_id)
+                        requested_to: Number(selectedBloodbanks[0]),
+                        priority: form.priority,
+                        required_by: form.required_by || null,
+                        patient_condition: form.patient_condition || null,
+                        broadcast_to_multiple: false
                     })
-                }).then(res => res.json())
-            )
+                })
 
-            const results = await Promise.all(promises)
-            const successful = results.filter(result => result.success).length
-            const failed = results.length - successful
-
-            if (successful > 0) {
-                setStatus(`✅ Successfully sent ${successful} request(s) to blood bank(s)${failed > 0 ? `. ${failed} request(s) failed.` : '!'}`)
-                setForm({ blood_type: '', units_requested: '' })
-                setSelectedBloodbanks([])
-            } else {
-                setStatus('❌ All requests failed. Please try again.')
+                if (response.ok) {
+                    alert('✅ Blood request sent successfully!')
+                    resetForm()
+                } else {
+                    const errorData = await response.json()
+                    alert(`❌ Failed to send request: ${errorData.error || 'Unknown error'}`)
+                }
             }
-        } catch {
-            setStatus('❌ Network error. Please try again.')
+        } catch (error) {
+            console.error('Error submitting request:', error)
+            alert('❌ Network error. Please check your connection and try again.')
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
+    }
+
+    const handleBroadcastChange = (isChecked) => {
+        setForm(prev => ({ ...prev, broadcast_to_multiple: isChecked }))
+
+        // If switching to single mode and multiple are selected, keep only the first one
+        if (!isChecked && selectedBloodbanks.length > 1) {
+            setSelectedBloodbanks([selectedBloodbanks[0]])
+        }
+    }
+
+    const resetForm = () => {
+        setForm({
+            blood_type: '',
+            units_requested: '',
+            priority: 'NORMAL',
+            required_by: '',
+            patient_condition: '',
+            broadcast_to_multiple: false
+        })
+        setSelectedBloodbanks([])
+        setStatus('')
     }
 
     return (
@@ -133,6 +213,21 @@ const RequestBlood = ({ user }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="glass-effect rounded-2xl p-8 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+                    {/* Priority Indicator */}
+                    {form.priority !== 'NORMAL' && (
+                        <div className={`mb-6 p-4 rounded-xl border-2 ${getPriorityColor(form.priority)} animate-pulse`}>
+                            <div className="flex items-center justify-center">
+                                <span className="text-lg font-bold text-white">
+                                    {getPriorityBadge(form.priority)}
+                                </span>
+                            </div>
+                            {form.priority === 'EMERGENCY' && (
+                                <p className="text-center text-sm text-gray-300 mt-2">
+                                    Emergency requests require immediate attention and additional details
+                                </p>
+                            )}
+                        </div>
+                    )}
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-semibold text-red-400 mb-2">
@@ -174,6 +269,75 @@ const RequestBlood = ({ user }) => {
                         </div>
                     </div>
 
+                    {/* Priority and Emergency Information */}
+                    <div className="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-red-400 mb-2">
+                                Priority Level *
+                            </label>
+                            <select
+                                className="input-modern w-full px-4 py-3 rounded-xl text-white"
+                                name="priority"
+                                value={form.priority}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="NORMAL" className="bg-gray-800">🟢 Normal Priority</option>
+                                <option value="URGENT" className="bg-gray-800">🟡 Urgent</option>
+                                <option value="EMERGENCY" className="bg-gray-800">🔴 Emergency</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-red-400 mb-2">
+                                Required By {form.priority === 'EMERGENCY' ? '*' : '(Optional)'}
+                            </label>
+                            <input
+                                className="input-modern w-full px-4 py-3 rounded-xl text-white"
+                                type="datetime-local"
+                                name="required_by"
+                                value={form.required_by}
+                                onChange={handleChange}
+                                required={form.priority === 'EMERGENCY'}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Patient Condition and Broadcast Option */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-red-400 mb-2">
+                            Patient Condition {form.priority === 'EMERGENCY' ? '*' : '(Optional)'}
+                        </label>
+                        <textarea
+                            className="input-modern w-full px-4 py-3 rounded-xl text-white resize-none"
+                            name="patient_condition"
+                            placeholder="Describe the patient's condition, medical urgency, or special requirements..."
+                            rows="3"
+                            value={form.patient_condition}
+                            onChange={handleChange}
+                            required={form.priority === 'EMERGENCY'}
+                        />
+                    </div>
+
+                    {/* Broadcast to Multiple Option */}
+                    <div className="mb-6">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                name="broadcast_to_multiple"
+                                checked={form.broadcast_to_multiple}
+                                onChange={(e) => handleBroadcastChange(e.target.checked)}
+                                className="w-5 h-5 text-red-600 bg-gray-800 border-gray-600 rounded focus:ring-red-500 focus:ring-2"
+                            />
+                            <span className="text-sm font-semibold text-gray-300">
+                                📢 Broadcast to multiple blood banks simultaneously
+                                <span className="text-gray-400 block text-xs mt-1">
+                                    Enable this for emergency situations to increase response rate
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+
                     {/* Blood Banks Selection */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-4">
@@ -193,24 +357,19 @@ const RequestBlood = ({ user }) => {
                             {bloodbanks.length === 0 ? (
                                 <p className="text-gray-400 text-center py-4">Loading blood banks...</p>
                             ) : (
-                                <div className="space-y-2">
-                                    {bloodbanks.map(bloodbank => (
-                                        <label
-                                            key={bloodbank.bloodbank_id}
-                                            className="flex items-center p-3 rounded-lg hover:bg-gray-800/50 transition-colors duration-200 cursor-pointer"
-                                        >
+                                <div className="space-y-3">
+                                    {bloodbanks.map(bank => (
+                                        <label key={bank.bloodbank_id} className="flex items-center space-x-3 p-3 bg-gray-800/30 rounded-lg hover:bg-gray-700/30 transition-colors cursor-pointer">
                                             <input
-                                                type="checkbox"
-                                                checked={selectedBloodbanks.includes(bloodbank.bloodbank_id)}
-                                                onChange={() => handleBloodBankSelection(bloodbank.bloodbank_id)}
-                                                className="w-4 h-4 text-red-500 bg-gray-700 border-gray-600 rounded focus:ring-red-500 focus:ring-2 mr-3"
+                                                type={form.broadcast_to_multiple ? "checkbox" : "radio"} // Radio for single, checkbox for multiple
+                                                name={form.broadcast_to_multiple ? undefined : "bloodbank"} // Radio button group name
+                                                checked={selectedBloodbanks.includes(bank.bloodbank_id.toString())}
+                                                onChange={(e) => handleBloodbankSelection(bank.bloodbank_id.toString(), e.target.checked)}
+                                                className="w-4 h-4 text-red-600 bg-gray-700 border-gray-600 focus:ring-red-500 focus:ring-2"
                                             />
                                             <div className="flex-1">
-                                                <div className="text-white font-semibold">{bloodbank.name}</div>
-                                                <div className="text-gray-400 text-sm">{bloodbank.location}</div>
-                                                {bloodbank.contact_number && (
-                                                    <div className="text-gray-500 text-xs">📞 {bloodbank.contact_number}</div>
-                                                )}
+                                                <p className="text-white font-medium">{bank.name}</p>
+                                                <p className="text-gray-400 text-sm">{bank.location}</p>
                                             </div>
                                         </label>
                                     ))}
@@ -227,8 +386,8 @@ const RequestBlood = ({ user }) => {
 
                     {status && (
                         <div className={`p-4 rounded-xl mb-6 text-center font-semibold ${status.includes('✅')
-                                ? 'bg-green-500/20 border border-green-500/50 text-green-400'
-                                : 'bg-red-500/20 border border-red-500/50 text-red-400'
+                            ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+                            : 'bg-red-500/20 border border-red-500/50 text-red-400'
                             }`}>
                             {status}
                         </div>

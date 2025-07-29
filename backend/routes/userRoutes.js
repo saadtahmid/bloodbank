@@ -34,7 +34,9 @@ import {
     updateDonorProfile,
     updateHospitalProfile,
     updateBloodBankProfile,
-    getDonorLeaderboard
+    getDonorLeaderboard,
+    getHospitalAnalytics,
+    getHospitalRecommendations
 } from '../services/userService.js'
 
 const router = Router()
@@ -318,6 +320,29 @@ router.post('/donations', async (req, res) => {
     }
 })
 
+// Add a direct donation (not from camp)
+router.post('/donations/direct', async (req, res) => {
+    console.log('POST /api/donations/direct called')
+    console.log('Request body:', req.body)
+    const { donor_id, bloodbank_id, blood_type, units, urgent_need_id } = req.body
+    if (!donor_id || !bloodbank_id || !blood_type || !units) {
+        console.log('Missing required fields')
+        return res.status(400).json({ error: 'donor_id, bloodbank_id, blood_type, and units are required' })
+    }
+    try {
+        const result = await addDirectDonation({ donor_id, bloodbank_id, blood_type, units, urgent_need_id })
+        console.log('Direct donation insert result:', result)
+        if (result.success) {
+            res.json({ success: true, donation_id: result.donation_id })
+        } else {
+            res.status(400).json({ success: false, error: result.error })
+        }
+    } catch (err) {
+        console.error('Failed to add direct donation:', err)
+        res.status(500).json({ error: 'Failed to add direct donation' })
+    }
+})
+
 // Get donation history for a donor
 router.get('/donations/history/:donor_id', async (req, res) => {
     const { donor_id } = req.params
@@ -350,18 +375,42 @@ router.get('/blood-requests/history/:hospital_id', async (req, res) => {
 
 // Hospital requests blood from a blood bank
 router.post('/blood-requests', async (req, res) => {
-    const { hospital_id, blood_type, units_requested, requested_to } = req.body
+    const {
+        hospital_id,
+        blood_type,
+        units_requested,
+        requested_to,
+        priority,
+        required_by,
+        patient_condition,
+        broadcast_to_multiple,
+        broadcast_group_id // Add this line
+    } = req.body
+
     if (!hospital_id || !blood_type || !units_requested || !requested_to) {
-        return res.status(400).json({ error: 'All fields are required' })
+        return res.status(400).json({ error: 'Hospital ID, blood type, units requested, and requested_to are required' })
     }
+
     try {
-        const result = await createBloodRequest({ hospital_id, blood_type, units_requested, requested_to })
+        const result = await createBloodRequest({
+            hospital_id,
+            blood_type,
+            units_requested,
+            requested_to,
+            priority,
+            required_by,
+            patient_condition,
+            broadcast_to_multiple,
+            broadcast_group_id  // Add this line
+        })
+
         if (result.success) {
-            res.json({ success: true, request_id: result.request_id })
+            res.json(result)
         } else {
-            res.status(400).json({ success: false, error: result.error })
+            res.status(400).json({ error: result.error })
         }
-    } catch (err) {
+    } catch (error) {
+        console.error('Blood request error:', error)
         res.status(500).json({ error: 'Failed to create blood request' })
     }
 })
@@ -399,12 +448,19 @@ router.post('/blood-requests/fulfill/:request_id', async (req, res) => {
     const { request_id } = req.params
     try {
         const result = await fulfillBloodRequest(request_id)
+        console.log('Fulfill request result:', result)
         if (result.success) {
-            res.json({ success: true, used_units: result.used_units })
+            res.json({
+                success: true,
+                consumed_units: result.consumed_units,
+                broadcast_cancelled: result.broadcast_cancelled
+            })
         } else {
+            console.log('Fulfill request failed:', result.error)
             res.status(400).json({ success: false, error: result.error })
         }
     } catch (err) {
+        console.error('Fulfill request route error:', err)
         res.status(500).json({ error: 'Failed to fulfill request' })
     }
 })
@@ -574,9 +630,49 @@ router.get('/donor-leaderboard', async (req, res) => {
         })
     } catch (error) {
         console.error('Leaderboard error:', error)
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            error: 'Failed to fetch donor leaderboard' 
+            error: 'Failed to fetch donor leaderboard'
+        })
+    }
+})
+
+// Get hospital analytics for dashboard
+router.get('/hospital/:hospital_id/analytics', async (req, res) => {
+    try {
+        const { hospital_id } = req.params
+        console.log('Fetching hospital analytics for hospital_id:', hospital_id)
+
+        const analytics = await getHospitalAnalytics(hospital_id)
+        res.json({
+            success: true,
+            analytics
+        })
+    } catch (error) {
+        console.error('Hospital analytics error:', error)
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch hospital analytics'
+        })
+    }
+})
+
+// Get hospital recommendations
+router.get('/hospital/:hospital_id/recommendations', async (req, res) => {
+    try {
+        const { hospital_id } = req.params
+        console.log('Fetching hospital recommendations for hospital_id:', hospital_id)
+
+        const recommendations = await getHospitalRecommendations(hospital_id)
+        res.json({
+            success: true,
+            recommendations
+        })
+    } catch (error) {
+        console.error('Hospital recommendations error:', error)
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch hospital recommendations'
         })
     }
 })

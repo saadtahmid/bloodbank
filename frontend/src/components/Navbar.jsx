@@ -313,6 +313,15 @@ const Navbar = ({ user, setUser, onLogout }) => {
                     <>
                         <li className="transform transition-all duration-200 hover:scale-110">
                             <a
+                                href="#hospital-dashboard"
+                                className="text-white hover:text-red-400 font-semibold transition-all duration-300"
+                                onClick={() => handleNavClick('#hospital-dashboard')}
+                            >
+                                Dashboard
+                            </a>
+                        </li>
+                        <li className="transform transition-all duration-200 hover:scale-110">
+                            <a
                                 href="#request-blood"
                                 className="text-white hover:text-red-400 font-semibold transition-all duration-300"
                                 onClick={() => handleNavClick('#request-blood')}
@@ -340,10 +349,10 @@ const Navbar = ({ user, setUser, onLogout }) => {
                                 className="text-white hover:text-red-400 font-semibold transition-all duration-300 hover:drop-shadow-lg flex items-center gap-2"
                                 onClick={() => handleNavClick('#profile')}
                             >
-                                <ProfileImage 
-                                    imageUrl={user?.image_url} 
-                                    size="w-8 h-8" 
-                                    fallbackIcon={getRoleIcon()} 
+                                <ProfileImage
+                                    imageUrl={user?.image_url}
+                                    size="w-8 h-8"
+                                    fallbackIcon={getRoleIcon()}
                                 />
                                 Profile
                             </a>

@@ -48,6 +48,58 @@ const BloodBankRequests = ({ user }) => {
         }
     }
 
+    const getPriorityColor = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return 'text-red-400 bg-red-500/20 border-red-500/50'
+            case 'URGENT': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/50'
+            case 'NORMAL': return 'text-green-400 bg-green-500/20 border-green-500/50'
+            default: return 'text-gray-400 bg-gray-500/20 border-gray-500/50'
+        }
+    }
+
+    const getPriorityIcon = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return '🚨'
+            case 'URGENT': return '⚡'
+            case 'NORMAL': return '✅'
+            default: return '📄'
+        }
+    }
+
+    const formatRequiredBy = (required_by) => {
+        if (!required_by) return '—'
+        try {
+            const date = new Date(required_by)
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            })
+        } catch {
+            return '—'
+        }
+    }
+
+    const getBroadcastStatus = (request) => {
+        if (!request.broadcast_to_multiple) return null
+
+        if (request.status === 'CANCELLED') {
+            return (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-gray-500/20 border border-gray-500/50 text-gray-400">
+                    📢 Fulfilled Elsewhere
+                </span>
+            )
+        }
+
+        return (
+            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 border border-blue-500/50 text-blue-400">
+                📢 Broadcast Request
+            </span>
+        )
+    }
+
     if (!user || user.role.toLowerCase() !== 'bloodbank') {
         return (
             <section className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-red-900 flex items-center justify-center">
@@ -101,6 +153,8 @@ const BloodBankRequests = ({ user }) => {
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Hospital</th>
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Blood Type</th>
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Units</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Priority</th>
+                                        <th className="px-6 py-4 text-left text-red-400 font-semibold">Required By</th>
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Date</th>
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Status</th>
                                         <th className="px-6 py-4 text-left text-red-400 font-semibold">Action</th>
@@ -118,11 +172,24 @@ const BloodBankRequests = ({ user }) => {
                                                 <span className="text-red-400 font-bold text-lg">{r.blood_type}</span>
                                             </td>
                                             <td className="px-6 py-4 text-white font-semibold">{r.units_requested}</td>
-                                            <td className="px-6 py-4 text-gray-300">{r.request_date}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(r.status)}`}>
-                                                    {r.status}
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(r.priority)}`}>
+                                                    {r.priority || 'NORMAL'}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-sm ${r.required_by ? 'text-yellow-300 font-semibold' : 'text-gray-400'}`}>
+                                                    {formatRequiredBy(r.required_by)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-300">{r.request_date}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col space-y-1">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(r.status)}`}>
+                                                        {r.status}
+                                                    </span>
+                                                    {getBroadcastStatus(r)}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {r.status === 'PENDING' ? (

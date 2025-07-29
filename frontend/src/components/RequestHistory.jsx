@@ -63,6 +63,40 @@ const RequestHistory = ({ user }) => {
         return colors[bloodType] || 'bg-gray-500/20 text-gray-400 border-gray-500/50'
     }
 
+    const getPriorityColor = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return 'text-red-400 bg-red-500/20 border-red-500/50'
+            case 'URGENT': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/50'
+            case 'NORMAL': return 'text-green-400 bg-green-500/20 border-green-500/50'
+            default: return 'text-gray-400 bg-gray-500/20 border-gray-500/50'
+        }
+    }
+
+    const getPriorityIcon = (priority) => {
+        switch (priority) {
+            case 'EMERGENCY': return '🚨'
+            case 'URGENT': return '⚡'
+            case 'NORMAL': return '✅'
+            default: return '📄'
+        }
+    }
+
+    const formatRequiredBy = (required_by) => {
+        if (!required_by) return null
+        try {
+            const date = new Date(required_by)
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            })
+        } catch {
+            return null
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-gray-900 flex items-center justify-center">
@@ -163,9 +197,12 @@ const RequestHistory = ({ user }) => {
                                 {requests.map((request) => (
                                     <div key={request.request_id} className="bg-gray-900/50 rounded-lg border border-gray-700 p-6 hover:border-red-500/50 transition-colors">
                                         <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center space-x-3">
+                                            <div className="flex items-center space-x-3 flex-wrap">
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getBloodTypeColor(request.blood_type)}`}>
                                                     {request.blood_type}
+                                                </span>
+                                                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(request.priority || 'NORMAL')}`}>
+                                                    {getPriorityIcon(request.priority || 'NORMAL')} {request.priority || 'NORMAL'}
                                                 </span>
                                                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(request.status)}`}>
                                                     {request.status}
@@ -190,8 +227,24 @@ const RequestHistory = ({ user }) => {
                                                     <p className="text-gray-400">Location</p>
                                                     <p className="text-white">{request.bloodbank_location || 'N/A'}</p>
                                                 </div>
+                                                {formatRequiredBy(request.required_by) && (
+                                                    <>
+                                                        <div>
+                                                            <p className="text-gray-400">Required By</p>
+                                                            <p className="text-yellow-300 font-semibold">{formatRequiredBy(request.required_by)}</p>
+                                                        </div>
+                                                        <div></div>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {request.patient_condition && (
+                                            <div className="mb-4 bg-gray-800/50 rounded-lg p-3">
+                                                <p className="text-gray-400 text-sm">Patient Condition</p>
+                                                <p className="text-white">{request.patient_condition}</p>
+                                            </div>
+                                        )}
 
                                         {request.bloodbank_phone && (
                                             <div className="mb-4">
@@ -205,6 +258,13 @@ const RequestHistory = ({ user }) => {
                                                 <p className="text-gray-400">Requested on</p>
                                                 <p className="text-white">{request.request_date}</p>
                                             </div>
+                                            {request.broadcast_to_multiple && (
+                                                <div className="text-right">
+                                                    <span className="text-xs text-blue-400 bg-blue-500/20 px-2 py-1 rounded-full border border-blue-500/50">
+                                                        📢 Broadcast
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

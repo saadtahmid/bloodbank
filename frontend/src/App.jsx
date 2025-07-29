@@ -21,6 +21,7 @@ import DonationHistory from './components/DonationHistory'
 import RequestHistory from './components/RequestHistory'
 import Profile from './components/Profile'
 import DonorLeaderboard from './components/DonorLeaderboard'
+import HospitalDashboard from './components/HospitalDashboard'
 import { useEffect, useState } from 'react'
 import { tokenStorage } from './utils/auth.js'
 import Chatbot from './components/Chatbot'
@@ -43,6 +44,7 @@ function App() {
   const [showDonationHistory, setShowDonationHistory] = useState(false)
   const [showRequestHistory, setShowRequestHistory] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showHospitalDashboard, setShowHospitalDashboard] = useState(false)
   const [user, setUser] = useState(null)
 
   // Check for stored authentication on app load
@@ -85,6 +87,7 @@ function App() {
       setShowDonationHistory(false)
       setShowRequestHistory(false)
       setShowLeaderboard(false)
+      setShowHospitalDashboard(false)
 
       // Set the appropriate state based on hash
       switch (hash) {
@@ -138,6 +141,9 @@ function App() {
           break
         case '#leaderboard':
           setShowLeaderboard(true)
+          break
+        case '#hospital-dashboard':
+          setShowHospitalDashboard(true)
           break
         default:
           // Home page (includes #home and empty)
@@ -201,6 +207,8 @@ function App() {
           <RequestHistory user={user} />
         ) : showLeaderboard ? (
           <DonorLeaderboard />
+        ) : showHospitalDashboard ? (
+          <HospitalDashboard hospitalId={user?.hospital_id} />
         ) : (
           <>
             <Intro />
