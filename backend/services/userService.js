@@ -314,7 +314,7 @@ export async function getRegistrationsForBloodBank(bloodbank_id) {
         FROM bloodbank.CampRegistration r
         JOIN bloodbank.Camp c ON r.camp_id = c.camp_id
         JOIN bloodbank.Donors d ON r.donor_id = d.donor_id
-        WHERE c.bloodbank_id = ${bloodbank_id}
+        WHERE c.bloodbank_id = ${bloodbank_id} and (d.last_donation_date IS NULL OR d.last_donation_date < NOW() - INTERVAL '3 months')
         ORDER BY r.registration_date DESC
     `
     return result.map(row => ({
