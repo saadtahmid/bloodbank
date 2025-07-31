@@ -676,7 +676,7 @@ export async function getUrgentNeedsForBank(bloodbank_id) {
 
 export async function getDonorsByBloodType(blood_type) {
     const result = await sql`
-        SELECT * FROM bloodbank.Donors WHERE blood_type = ${blood_type}
+        SELECT * FROM bloodbank.Donors WHERE blood_type = ${blood_type} and (last_donation_date IS NULL OR last_donation_date < NOW() - INTERVAL '3 months')
     `
     return result
 }
